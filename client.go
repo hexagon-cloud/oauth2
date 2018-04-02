@@ -1,8 +1,8 @@
-package client
+package oauth2
 
-// Client details interface for OAuth 2
+// ClientDetails interface for OAuth 2
 type ClientDetails interface {
-	GetId() string
+	GetID() string
 	GetSecret() string
 	GetDomain() string
 	GetUserID() string

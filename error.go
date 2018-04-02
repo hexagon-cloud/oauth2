@@ -1,4 +1,4 @@
-package errors
+package oauth2
 
 import "errors"
 

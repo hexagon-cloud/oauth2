@@ -1,4 +1,4 @@
-package token
+package oauth2
 
 import (
 	"time"
