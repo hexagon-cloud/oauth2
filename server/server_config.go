@@ -30,14 +30,14 @@ func (s *Server) SetClientInfoHandler(handler ClientInfoHandler) {
 }
 
 // SetClientAuthorizedHandler check the client allows to use this authorization grant type
-func (s *Server) SetClientAuthorizedHandler(handler ClientAuthorizedHandler) {
-	s.ClientAuthorizedHandler = handler
-}
+// func (s *Server) SetClientAuthorizedHandler(handler ClientAuthorizedHandler) {
+// 	s.ClientAuthorizedHandler = handler
+// }
 
-// SetClientScopeHandler check the client allows to use scope
-func (s *Server) SetClientScopeHandler(handler ClientScopeHandler) {
-	s.ClientScopeHandler = handler
-}
+// // SetClientScopeHandler check the client allows to use scope
+// func (s *Server) SetClientScopeHandler(handler ClientScopeHandler) {
+// 	s.ClientScopeHandler = handler
+// }
 
 // SetUserAuthorizationHandler get user id from request authorization
 func (s *Server) SetUserAuthorizationHandler(handler UserAuthorizationHandler) {

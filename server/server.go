@@ -44,11 +44,11 @@ func NewServer(cfg *Config, manager oauth2.Manager) *Server {
 
 // Server Provide authorization server
 type Server struct {
-	Config                       *Config
-	Manager                      oauth2.Manager
-	ClientInfoHandler            ClientInfoHandler
-	ClientAuthorizedHandler      ClientAuthorizedHandler
-	ClientScopeHandler           ClientScopeHandler
+	Config            *Config
+	Manager           oauth2.Manager
+	ClientInfoHandler ClientInfoHandler
+	// ClientAuthorizedHandler      ClientAuthorizedHandler
+	// ClientScopeHandler           ClientScopeHandler
 	UserAuthorizationHandler     UserAuthorizationHandler
 	PasswordAuthorizationHandler PasswordAuthorizationHandler
 	RefreshingScopeHandler       RefreshingScopeHandler
@@ -181,39 +181,51 @@ func (s *Server) ValidationAuthorizeRequest(r *http.Request) (req *AuthorizeRequ
 	return
 }
 
+// ValidateClientGrantType check the client allows the grant type
+func (s *Server) ValidateClientGrantType(gt oauth2.GrantType, cli oauth2.ClientDetails) bool {
+	allowed := false
+	for _, agt := range cli.GetAuthorizedGrantTypes() {
+		if agt == gt {
+			allowed = true
+		}
+	}
+	return allowed
+}
+
+// ValidateScope check the client allows the authorized scope
+func (s *Server) ValidateScope(scope string, cli oauth2.ClientDetails) bool {
+	allowed := false
+	for _, sp := range cli.GetScopes() {
+		if sp == scope {
+			allowed = true
+		}
+	}
+	return allowed
+}
+
 // GetAuthorizeToken get authorization token(code)
 func (s *Server) GetAuthorizeToken(req *AuthorizeRequest) (ti oauth2.TokenDetails, err error) {
-	// check the client allows the grant type
-	if fn := s.ClientAuthorizedHandler; fn != nil {
-		gt := oauth2.AuthorizationCode
-
-		if req.ResponseType == oauth2.TokenRsp {
-			gt = oauth2.Implicit
-		}
-
-		allowed, verr := fn(req.ClientID, gt)
-		if verr != nil {
-			err = verr
-			return
-		} else if !allowed {
-			err = oauth2.ErrUnauthorizedClient
-			return
-		}
+	// load clientDetails
+	client, err := s.Manager.GetClient(req.ClientID)
+	if err != nil {
+		err = oauth2.ErrInvalidClient
+		return
+	}
+	gt := oauth2.AuthorizationCode
+	if req.ResponseType == oauth2.TokenRsp {
+		gt = oauth2.Implicit
 	}
 
-	// check the client allows the authorized scope
-	if fn := s.ClientScopeHandler; fn != nil {
-
-		allowed, verr := fn(req.ClientID, req.Scope)
-		if verr != nil {
-			err = verr
-			return
-		} else if !allowed {
-			err = oauth2.ErrInvalidScope
-			return
-		}
+	grantTypeAllowed := s.ValidateClientGrantType(gt, client)
+	if !grantTypeAllowed {
+		err = oauth2.ErrUnsupportedGrantType
+		return
 	}
-
+	scopeAllowed := s.ValidateScope(req.Scope, client)
+	if !scopeAllowed {
+		err = oauth2.ErrInvalidScope
+		return
+	}
 	tgr := &oauth2.TokenGenerateRequest{
 		ClientID:       req.ClientID,
 		UserID:         req.UserID,
@@ -222,7 +234,7 @@ func (s *Server) GetAuthorizeToken(req *AuthorizeRequest) (ti oauth2.TokenDetail
 		AccessTokenExp: req.AccessTokenExp,
 	}
 
-	ti, err = s.Manager.GenerateAuthToken(req.ResponseType, tgr)
+	ti, err = s.Manager.GenerateAuthToken(req.ResponseType, tgr, client)
 	return
 }
 
@@ -302,7 +314,7 @@ func (s *Server) ValidationTokenRequest(r *http.Request) (gt oauth2.GrantType, t
 	gt = oauth2.GrantType(r.FormValue("grant_type"))
 
 	if gt.String() == "" {
-		err = oauth2.ErrUnsupportedGrantType
+		err = oauth2.ErrInvalidRequest
 		return
 	}
 
@@ -369,26 +381,15 @@ func (s *Server) CheckGrantType(gt oauth2.GrantType) bool {
 }
 
 // GetAccessToken access token
-func (s *Server) GetAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGenerateRequest) (ti oauth2.TokenDetails, err error) {
+func (s *Server) GetAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGenerateRequest, cli oauth2.ClientDetails) (ti oauth2.TokenDetails, err error) {
 	if allowed := s.CheckGrantType(gt); !allowed {
-		err = oauth2.ErrUnauthorizedClient
+		err = oauth2.ErrUnsupportedGrantType
 		return
-	}
-
-	if fn := s.ClientAuthorizedHandler; fn != nil {
-		allowed, verr := fn(tgr.ClientID, gt)
-		if verr != nil {
-			err = verr
-			return
-		} else if !allowed {
-			err = oauth2.ErrUnauthorizedClient
-			return
-		}
 	}
 
 	switch gt {
 	case oauth2.AuthorizationCode:
-		ati, verr := s.Manager.GenerateAccessToken(gt, tgr)
+		ati, verr := s.Manager.GenerateAccessToken(gt, tgr, cli)
 		if verr != nil {
 
 			if verr == oauth2.ErrInvalidAuthorizeCode {
@@ -402,18 +403,7 @@ func (s *Server) GetAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGenerateRe
 		}
 		ti = ati
 	case oauth2.PasswordCredentials, oauth2.ClientCredentials:
-		if fn := s.ClientScopeHandler; fn != nil {
-
-			allowed, verr := fn(tgr.ClientID, tgr.Scope)
-			if verr != nil {
-				err = verr
-				return
-			} else if !allowed {
-				err = oauth2.ErrInvalidScope
-				return
-			}
-		}
-		ti, err = s.Manager.GenerateAccessToken(gt, tgr)
+		ti, err = s.Manager.GenerateAccessToken(gt, tgr, cli)
 	case oauth2.Refreshing:
 		// check scope
 		if scope, scopeFn := tgr.Scope, s.RefreshingScopeHandler; scope != "" && scopeFn != nil {
@@ -488,8 +478,27 @@ func (s *Server) HandleTokenRequest(w http.ResponseWriter, r *http.Request) (err
 		err = s.tokenError(w, verr)
 		return
 	}
+	client, err := s.Manager.GetClient(tgr.ClientID)
+	if err != nil {
+		err = s.tokenError(w, oauth2.ErrInvalidClient)
+		return
+	} else if tgr.ClientSecret != client.GetSecret() {
+		err = s.tokenError(w, oauth2.ErrInvalidClient)
+		return
+	}
 
-	ti, verr := s.GetAccessToken(gt, tgr)
+	grantTypeAllowed := s.ValidateClientGrantType(gt, client)
+	if !grantTypeAllowed {
+		err = s.tokenError(w, oauth2.ErrUnsupportedGrantType)
+		return
+	}
+	scopeAllowed := s.ValidateScope(tgr.Scope, client)
+	if !scopeAllowed {
+		err = s.tokenError(w, oauth2.ErrInvalidScope)
+		return
+	}
+
+	ti, verr := s.GetAccessToken(gt, tgr, client)
 	if verr != nil {
 		err = s.tokenError(w, verr)
 		return
@@ -501,7 +510,7 @@ func (s *Server) HandleTokenRequest(w http.ResponseWriter, r *http.Request) (err
 
 // GetErrorData get error response data
 func (s *Server) GetErrorData(err error) (data map[string]interface{}, statusCode int, header http.Header) {
-	re := new(oauth2.Response)
+	re := new(oauth2.ErrorResponse)
 
 	if v, ok := oauth2.Descriptions[err]; ok {
 		re.Error = err
@@ -525,7 +534,7 @@ func (s *Server) GetErrorData(err error) (data map[string]interface{}, statusCod
 		fn(re)
 
 		if re == nil {
-			re = new(oauth2.Response)
+			re = new(oauth2.ErrorResponse)
 		}
 	}
 

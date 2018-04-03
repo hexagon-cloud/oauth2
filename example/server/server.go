@@ -12,6 +12,7 @@ import (
 	buntdbStore "github.com/hexagon-cloud/oauth2/store/buntdb"
 	memoryStore "github.com/hexagon-cloud/oauth2/store/memory"
 	session "gopkg.in/session.v1"
+	"time"
 )
 
 var (
@@ -29,23 +30,27 @@ func main() {
 	mgr.MustTokenStorage(buntdbStore.NewMemoryTokenStore())
 
 	clientStore := memoryStore.NewClientStore()
-	clientStore.Set("222222", &oauth2.Client{
-		ID:     "222222",
-		Secret: "22222222",
-		Domain: "http://localhost:9094",
+	clientStore.Set("server", &oauth2.Client{
+		ID:                   "server",
+		Secret:               "server",
+		Domain:               "http://localhost:9094",
+		Scopes:               []string{"server"},
+		AuthorizedGrantTypes: []oauth2.GrantType{oauth2.ClientCredentials},
+		AccessTokenExp:       time.Duration(8)*time.Hour,
+		RefreshTokenExp:      time.Duration(8)*time.Hour,
 	})
 	mgr.MapClientStorage(clientStore)
 
 	uaaServer := server.NewServer(server.NewConfig(), mgr)
 	uaaServer.SetUserAuthorizationHandler(userAuthorizeHandler)
 
-	uaaServer.SetInternalErrorHandler(func(err error) (re *oauth2.Response) {
+	uaaServer.SetInternalErrorHandler(func(err error) (re *oauth2.ErrorResponse) {
 		log.Println("Internal Error:", err.Error())
 		return
 	})
 
-	uaaServer.SetResponseErrorHandler(func(re *oauth2.Response) {
-		log.Println("Response Error:", re.Error.Error())
+	uaaServer.SetResponseErrorHandler(func(re *oauth2.ErrorResponse) {
+		log.Println("ErrorResponse Error:", re.Error.Error())
 	})
 
 	http.HandleFunc("/login", loginHandler)

@@ -1,4 +1,4 @@
-package manager_test
+package manager
 
 import (
 	"testing"

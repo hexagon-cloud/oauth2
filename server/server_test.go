@@ -1,4 +1,4 @@
-package server_test
+package server
 
 import (
 	"fmt"
@@ -20,8 +20,10 @@ var (
 	tsrv         *httptest.Server
 	manager      *mgr.Manager
 	csrv         *httptest.Server
-	clientID     = "111111"
-	clientSecret = "11111111"
+	clientID     = "server"
+	clientSecret = "server"
+	scopes       = []string{"server"}
+	grantType    = []oauth2.GrantType{oauth2.ClientCredentials}
 )
 
 func init() {
@@ -32,9 +34,11 @@ func init() {
 func clientStore(domain string) oauth2.ClientStore {
 	clientStore := memStore.NewClientStore()
 	clientStore.Set(clientID, &oauth2.Client{
-		ID:     clientID,
-		Secret: clientSecret,
-		Domain: domain,
+		ID:                   clientID,
+		Secret:               clientSecret,
+		Domain:               domain,
+		Scopes:               scopes,
+		AuthorizedGrantTypes: grantType,
 	})
 	return clientStore
 }
@@ -51,6 +55,7 @@ func testServer(t *testing.T, w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			t.Error(err)
 		}
+	case "/check_token":
 	}
 }
 
@@ -175,13 +180,13 @@ func TestClientCredentials(t *testing.T) {
 	srv = server.NewDefaultServer(manager)
 	srv.SetClientInfoHandler(server.ClientFormHandler)
 
-	srv.SetInternalErrorHandler(func(err error) (re *oauth2.Response) {
+	srv.SetInternalErrorHandler(func(err error) (re *oauth2.ErrorResponse) {
 		t.Log("OAuth 2.0 Error:", err.Error())
 		return
 	})
 
-	srv.SetResponseErrorHandler(func(re *oauth2.Response) {
-		t.Log("Response Error:", re.Error)
+	srv.SetResponseErrorHandler(func(re *oauth2.ErrorResponse) {
+		t.Log("ErrorResponse Error:", re.Error)
 	})
 
 	srv.SetAllowedGrantType(oauth2.ClientCredentials)
@@ -195,10 +200,10 @@ func TestClientCredentials(t *testing.T) {
 	srv.SetAuthorizeScopeHandler(func(w http.ResponseWriter, r *http.Request) (scope string, err error) {
 		return
 	})
-	srv.SetClientScopeHandler(func(clientID, scope string) (allowed bool, err error) {
-		allowed = true
-		return
-	})
+	// srv.SetClientScopeHandler(func(clientID, scope string) (allowed bool, err error) {
+	// 	allowed = true
+	// 	return
+	// })
 
 	resObj := e.POST("/token").
 		WithFormField("grant_type", "client_credentials").

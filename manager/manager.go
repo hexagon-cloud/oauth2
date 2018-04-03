@@ -158,11 +158,8 @@ func (m *Manager) GetClient(clientID string) (cli oauth2.ClientDetails, err erro
 }
 
 // GenerateAuthToken generate the authorization token(code)
-func (m *Manager) GenerateAuthToken(rt oauth2.ResponseType, tgr *oauth2.TokenGenerateRequest) (authToken oauth2.TokenDetails, err error) {
-	cli, err := m.GetClient(tgr.ClientID)
-	if err != nil {
-		return
-	} else if verr := m.validateURI(cli.GetDomain(), tgr.RedirectURI); verr != nil {
+func (m *Manager) GenerateAuthToken(rt oauth2.ResponseType, tgr *oauth2.TokenGenerateRequest, cli oauth2.ClientDetails) (authToken oauth2.TokenDetails, err error) {
+	if verr := m.validateURI(cli.GetDomain(), tgr.RedirectURI); verr != nil {
 		err = verr
 		return
 	}
@@ -262,7 +259,7 @@ func (m *Manager) delAuthorizationCode(code string) (err error) {
 }
 
 // GenerateAccessToken generate the access token
-func (m *Manager) GenerateAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGenerateRequest) (accessToken oauth2.TokenDetails, err error) {
+func (m *Manager) GenerateAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGenerateRequest, cli oauth2.ClientDetails) (accessToken oauth2.TokenDetails, err error) {
 	if gt == oauth2.AuthorizationCode {
 		ti, terr := m.getAuthorizationCode(tgr.Code)
 		if terr != nil {
@@ -282,13 +279,6 @@ func (m *Manager) GenerateAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGene
 		}
 	}
 
-	cli, err := m.GetClient(tgr.ClientID)
-	if err != nil {
-		return
-	} else if tgr.ClientSecret != cli.GetSecret() {
-		err = oauth2.ErrInvalidClient
-		return
-	}
 	_, ierr := m.injector.Invoke(func(ti oauth2.TokenDetails, gen oauth2.AccessGenerate, stor oauth2.TokenStore) {
 		ti = ti.New()
 		td := &oauth2.GenerateBasic{
@@ -315,11 +305,19 @@ func (m *Manager) GenerateAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGene
 		if exp := tgr.AccessTokenExp; exp > 0 {
 			aexp = exp
 		}
+		if exp := cli.GetAccessTokenExp(); exp > 0 {
+			aexp = exp
+		}
 		ti.SetAccessExpiresIn(aexp)
 		if rv != "" {
 			ti.SetRefresh(rv)
 			ti.SetRefreshCreateAt(td.CreateAt)
-			ti.SetRefreshExpiresIn(gcfg.RefreshTokenExp)
+			// set refresh token expires
+			rexp := gcfg.RefreshTokenExp
+			if exp := cli.GetRefreshTokenExp(); exp > 0 {
+				rexp = exp
+			}
+			ti.SetRefreshExpiresIn(rexp)
 		}
 
 		err = stor.Create(ti)

@@ -22,13 +22,13 @@ type Manager interface {
 	CheckInterface() (err error)
 
 	// get the client information
-	GetClient(clientID string) (client ClientDetails, err error)
+	GetClient(clientID string) (cli ClientDetails, err error)
 
 	// generate the authorization token(code)
-	GenerateAuthToken(rt ResponseType, tgr *TokenGenerateRequest) (authToken TokenDetails, err error)
+	GenerateAuthToken(rt ResponseType, tgr *TokenGenerateRequest, cli ClientDetails) (authToken TokenDetails, err error)
 
 	// generate the access token
-	GenerateAccessToken(rt GrantType, tgr *TokenGenerateRequest) (accessToken TokenDetails, err error)
+	GenerateAccessToken(rt GrantType, tgr *TokenGenerateRequest, cli ClientDetails) (accessToken TokenDetails, err error)
 
 	// refreshing an access token
 	RefreshAccessToken(tgr *TokenGenerateRequest) (accessToken TokenDetails, err error)

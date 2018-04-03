@@ -11,12 +11,6 @@ type (
 	// ClientInfoHandler get client info from request
 	ClientInfoHandler func(r *http.Request) (clientID, clientSecret string, err error)
 
-	// ClientAuthorizedHandler check the client allows to use this authorization grant type
-	ClientAuthorizedHandler func(clientID string, grant oauth2.GrantType) (allowed bool, err error)
-
-	// ClientScopeHandler check the client allows to use scope
-	ClientScopeHandler func(clientID, scope string) (allowed bool, err error)
-
 	// UserAuthorizationHandler get user id from request authorization
 	UserAuthorizationHandler func(w http.ResponseWriter, r *http.Request) (userID string, err error)
 
@@ -27,10 +21,10 @@ type (
 	RefreshingScopeHandler func(newScope, oldScope string) (allowed bool, err error)
 
 	// ResponseErrorHandler response error handing
-	ResponseErrorHandler func(re *oauth2.Response)
+	ResponseErrorHandler func(re *oauth2.ErrorResponse)
 
 	// InternalErrorHandler internal error handing
-	InternalErrorHandler func(err error) (re *oauth2.Response)
+	InternalErrorHandler func(err error) (re *oauth2.ErrorResponse)
 
 	// AuthorizeScopeHandler set the authorized scope
 	AuthorizeScopeHandler func(w http.ResponseWriter, r *http.Request) (scope string, err error)

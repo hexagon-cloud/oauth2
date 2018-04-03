@@ -1,5 +1,7 @@
 package oauth2
 
+import "time"
+
 // ClientDetails interface for OAuth 2
 type ClientDetails interface {
 	GetID() string
@@ -8,8 +10,8 @@ type ClientDetails interface {
 	GetUserID() string
 	GetScopes() []string
 	GetAuthorizedGrantTypes() []GrantType
-	GetAccessTokenValidSec() int32
-	GetRefreshTokenValidSec() int32
+	GetAccessTokenExp() time.Duration
+	GetRefreshTokenExp() time.Duration
 }
 
 // Client client model
@@ -20,8 +22,8 @@ type Client struct {
 	UserID               string
 	Scopes               []string
 	AuthorizedGrantTypes []GrantType
-	AccessTokenValidSec  int32
-	RefreshTokenValidSec int32
+	AccessTokenExp       time.Duration
+	RefreshTokenExp      time.Duration
 }
 
 // GetID client id
@@ -54,12 +56,12 @@ func (c *Client) GetScopes() []string {
 	return c.Scopes
 }
 
-// GetAccessTokenValidSec access token validity seconds
-func (c *Client) GetAccessTokenValidSec() int32 {
-	return c.AccessTokenValidSec
+// GetAccessTokenExp access token validity seconds
+func (c *Client) GetAccessTokenExp() time.Duration {
+	return c.AccessTokenExp
 }
 
-// GetRefreshTokenValidSec refresh validity seconds
-func (c *Client) GetRefreshTokenValidSec() int32 {
-	return c.RefreshTokenValidSec
+// GetRefreshTokenExp refresh validity seconds
+func (c *Client) GetRefreshTokenExp() time.Duration {
+	return c.RefreshTokenExp
 }

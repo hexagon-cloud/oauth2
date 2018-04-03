@@ -1,4 +1,4 @@
-package buntdb_test
+package buntdb
 
 import (
 	"os"
