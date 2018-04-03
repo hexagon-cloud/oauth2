@@ -17,6 +17,7 @@ func main() {
 	// token store
 	mgr.MustTokenStorage(buntdbStore.NewMemoryTokenStore())
 
+	// client store
 	clientStore := memoryStore.NewClientStore()
 	clientStore.Set("server", &oauth2.Client{
 		ID:                   "server",
@@ -37,9 +38,11 @@ func main() {
 	})
 	mgr.MapClientStorage(clientStore)
 
+	// password encoder
 	pwdEncoder := sha256.NewPasswordEncoder("key")
 	mgr.MapPasswordEncoder(pwdEncoder)
 
+	// user store
 	userStore := memoryStore.NewUserStore()
 	userStore.Set("user1", &oauth2.User{
 		Username: "user1",
