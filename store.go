@@ -30,4 +30,9 @@ type (
 		// use the refresh token for token information data
 		GetByRefresh(refresh string) (TokenDetails, error)
 	}
+
+	// UserStore the user information storage interface
+	UserStore interface {
+		GetByUsername(username string) (UserDetails, error)
+	}
 )
