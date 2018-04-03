@@ -55,7 +55,6 @@ func testServer(t *testing.T, w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			t.Error(err)
 		}
-	case "/check_token":
 	}
 }
 

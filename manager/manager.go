@@ -37,6 +37,28 @@ type Manager struct {
 	validateURI ValidateURIHandler
 }
 
+func (m *Manager) AuthenticateUser(username string, password string) (user oauth2.UserDetails, err error) {
+	m.injector.Invoke(func(us oauth2.UserStore, encoder oauth2.PasswordEncoder) {
+		user, err = us.GetByUsername(username)
+		if err != nil {
+			err = oauth2.ErrInvalidGrant
+			return
+		}
+		if !encoder.Matches(password, user.GetPassword()) {
+			err = oauth2.ErrInvalidGrant
+			return
+		}
+	})
+	return
+}
+
+func (m *Manager) LoadUserByUsername(username string) (user oauth2.UserDetails, err error) {
+	m.injector.Invoke(func(us oauth2.UserStore) {
+		user, err = us.GetByUsername(username)
+	})
+	return
+}
+
 // get grant type config
 func (m *Manager) grantConfig(gt oauth2.GrantType) *Config {
 	if c, ok := m.gtcfg[gt]; ok && c != nil {
@@ -118,6 +140,19 @@ func (m *Manager) MustClientStorage(stor oauth2.ClientStore, err error) {
 	m.injector.Map(stor)
 }
 
+// MapUserStorage mapping the client store interface
+func (m *Manager) MapUserStorage(stor oauth2.UserStore) {
+	m.injector.Map(stor)
+}
+
+// MustUserStorage mandatory mapping the client store interface
+func (m *Manager) MustUserStorage(stor oauth2.UserStore, err error) {
+	if err != nil {
+		panic(err.Error())
+	}
+	m.injector.Map(stor)
+}
+
 // MapTokenStorage mapping the token store interface
 func (m *Manager) MapTokenStorage(stor oauth2.TokenStore) {
 	m.injector.Map(stor)
@@ -129,6 +164,11 @@ func (m *Manager) MustTokenStorage(stor oauth2.TokenStore, err error) {
 		panic(err)
 	}
 	m.injector.Map(stor)
+}
+
+// MapPasswordEncoder mapping the password encoder interface
+func (m *Manager) MapPasswordEncoder(encoder oauth2.PasswordEncoder) {
+	m.injector.Map(encoder)
 }
 
 // CheckInterface check the interface implementation
@@ -279,13 +319,15 @@ func (m *Manager) GenerateAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGene
 		}
 	}
 
-	_, ierr := m.injector.Invoke(func(ti oauth2.TokenDetails, gen oauth2.AccessGenerate, stor oauth2.TokenStore) {
-		ti = ti.New()
+	_, ierr := m.injector.Invoke(func(tokenDetails oauth2.TokenDetails, gen oauth2.AccessGenerate, stor oauth2.TokenStore) {
+		// TODO. load existingAccessToken
+
+		tokenDetails = tokenDetails.New()
 		td := &oauth2.GenerateBasic{
 			Client:   cli,
 			UserID:   tgr.UserID,
 			CreateAt: time.Now(),
-			Token:    ti,
+			Token:    tokenDetails,
 		}
 		gcfg := m.grantConfig(gt)
 
@@ -294,12 +336,12 @@ func (m *Manager) GenerateAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGene
 			err = terr
 			return
 		}
-		ti.SetClientID(tgr.ClientID)
-		ti.SetUserID(tgr.UserID)
-		ti.SetRedirectURI(tgr.RedirectURI)
-		ti.SetScope(tgr.Scope)
-		ti.SetAccessCreateAt(td.CreateAt)
-		ti.SetAccess(av)
+		tokenDetails.SetClientID(tgr.ClientID)
+		tokenDetails.SetUserID(tgr.UserID)
+		tokenDetails.SetRedirectURI(tgr.RedirectURI)
+		tokenDetails.SetScope(tgr.Scope)
+		tokenDetails.SetAccessCreateAt(td.CreateAt)
+		tokenDetails.SetAccess(av)
 		// set access token expires
 		aexp := gcfg.AccessTokenExp
 		if exp := tgr.AccessTokenExp; exp > 0 {
@@ -308,23 +350,23 @@ func (m *Manager) GenerateAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGene
 		if exp := cli.GetAccessTokenExp(); exp > 0 {
 			aexp = exp
 		}
-		ti.SetAccessExpiresIn(aexp)
+		tokenDetails.SetAccessExpiresIn(aexp)
 		if rv != "" {
-			ti.SetRefresh(rv)
-			ti.SetRefreshCreateAt(td.CreateAt)
+			tokenDetails.SetRefresh(rv)
+			tokenDetails.SetRefreshCreateAt(td.CreateAt)
 			// set refresh token expires
 			rexp := gcfg.RefreshTokenExp
 			if exp := cli.GetRefreshTokenExp(); exp > 0 {
 				rexp = exp
 			}
-			ti.SetRefreshExpiresIn(rexp)
+			tokenDetails.SetRefreshExpiresIn(rexp)
 		}
 
-		err = stor.Create(ti)
+		err = stor.Create(tokenDetails)
 		if err != nil {
 			return
 		}
-		accessToken = ti
+		accessToken = tokenDetails
 	})
 	if ierr != nil && err == nil {
 		err = ierr

@@ -44,11 +44,6 @@ func (s *Server) SetUserAuthorizationHandler(handler UserAuthorizationHandler) {
 	s.UserAuthorizationHandler = handler
 }
 
-// SetPasswordAuthorizationHandler get user id from username and password
-func (s *Server) SetPasswordAuthorizationHandler(handler PasswordAuthorizationHandler) {
-	s.PasswordAuthorizationHandler = handler
-}
-
 // SetRefreshingScopeHandler check the scope of the refreshing token
 func (s *Server) SetRefreshingScopeHandler(handler RefreshingScopeHandler) {
 	s.RefreshingScopeHandler = handler

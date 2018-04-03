@@ -35,10 +35,6 @@ func NewServer(cfg *Config, manager oauth2.Manager) *Server {
 		return
 	}
 
-	srv.PasswordAuthorizationHandler = func(username, password string) (userID string, err error) {
-		err = oauth2.ErrAccessDenied
-		return
-	}
 	return srv
 }
 
@@ -50,7 +46,6 @@ type Server struct {
 	// ClientAuthorizedHandler      ClientAuthorizedHandler
 	// ClientScopeHandler           ClientScopeHandler
 	UserAuthorizationHandler     UserAuthorizationHandler
-	PasswordAuthorizationHandler PasswordAuthorizationHandler
 	RefreshingScopeHandler       RefreshingScopeHandler
 	ResponseErrorHandler         ResponseErrorHandler
 	InternalErrorHandler         InternalErrorHandler
@@ -379,16 +374,16 @@ func (s *Server) ValidationTokenRequest(r *http.Request) (gt oauth2.GrantType, t
 			return
 		}
 
-		userID, verr := s.PasswordAuthorizationHandler(username, password)
+		userDetails, verr := s.Manager.AuthenticateUser(username, password)
 		if verr != nil {
 			err = verr
 			return
-		} else if userID == "" {
+		} else if userDetails == nil {
 			err = oauth2.ErrInvalidGrant
 			return
 		}
 
-		tgr.UserID = userID
+		tgr.UserID = userDetails.GetUserID()
 	case oauth2.ClientCredentials:
 		tgr.Scope = r.FormValue("scope")
 	case oauth2.Refreshing:

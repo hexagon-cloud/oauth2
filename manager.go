@@ -24,6 +24,10 @@ type Manager interface {
 	// get the client information
 	GetClient(clientID string) (cli ClientDetails, err error)
 
+	LoadUserByUsername(username string) (UserDetails, error)
+
+	AuthenticateUser(username string, password string) (UserDetails, error)
+
 	// generate the authorization token(code)
 	GenerateAuthToken(rt ResponseType, tgr *TokenGenerateRequest, cli ClientDetails) (authToken TokenDetails, err error)
 
