@@ -34,7 +34,7 @@ func main() {
 		ID:                   "server",
 		Secret:               "server",
 		Domain:               "http://localhost:9094",
-		Scopes:               []string{"server"},
+		Scopes:               []string{"server","all"},
 		AuthorizedGrantTypes: []oauth2.GrantType{oauth2.ClientCredentials},
 		AccessTokenExp:       time.Duration(8)*time.Hour,
 		RefreshTokenExp:      time.Duration(8)*time.Hour,

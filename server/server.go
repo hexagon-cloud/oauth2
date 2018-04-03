@@ -194,13 +194,23 @@ func (s *Server) ValidateClientGrantType(gt oauth2.GrantType, cli oauth2.ClientD
 
 // ValidateScope check the client allows the authorized scope
 func (s *Server) ValidateScope(scope string, cli oauth2.ClientDetails) bool {
-	allowed := false
-	for _, sp := range cli.GetScopes() {
-		if sp == scope {
-			allowed = true
+	if scope == "" {
+		return true
+	}
+	requestScopes := strings.Split(scope, ",")
+	for _, rsp := range requestScopes {
+		// contains
+		allowed := false
+		for _, sp := range cli.GetScopes() {
+			if sp == rsp {
+				allowed = true
+			}
+		}
+		if !allowed {
+			return false
 		}
 	}
-	return allowed
+	return true
 }
 
 // GetAuthorizeToken get authorization token(code)
@@ -221,16 +231,23 @@ func (s *Server) GetAuthorizeToken(req *AuthorizeRequest) (ti oauth2.TokenDetail
 		err = oauth2.ErrUnsupportedGrantType
 		return
 	}
-	scopeAllowed := s.ValidateScope(req.Scope, client)
-	if !scopeAllowed {
-		err = oauth2.ErrInvalidScope
-		return
+
+	requestScope := req.Scope
+	if requestScope == "" {
+		requestScope = strings.Join(client.GetScopes(), ",")
+	} else {
+		scopeAllowed := s.ValidateScope(requestScope, client)
+		if !scopeAllowed {
+			err = oauth2.ErrInvalidScope
+			return
+		}
 	}
+
 	tgr := &oauth2.TokenGenerateRequest{
 		ClientID:       req.ClientID,
 		UserID:         req.UserID,
 		RedirectURI:    req.RedirectURI,
-		Scope:          req.Scope,
+		Scope:          requestScope,
 		AccessTokenExp: req.AccessTokenExp,
 	}
 
@@ -304,7 +321,7 @@ func (s *Server) HandleAuthorizeRequest(w http.ResponseWriter, r *http.Request) 
 }
 
 // ValidationTokenRequest the token request validation
-func (s *Server) ValidationTokenRequest(r *http.Request) (gt oauth2.GrantType, tgr *oauth2.TokenGenerateRequest, err error) {
+func (s *Server) ValidationTokenRequest(r *http.Request) (gt oauth2.GrantType, tgr *oauth2.TokenGenerateRequest, client oauth2.ClientDetails, err error) {
 	if v := r.Method; !(v == "POST" ||
 		(s.Config.AllowGetAccessRequest && v == "GET")) {
 		err = oauth2.ErrInvalidRequest
@@ -326,6 +343,21 @@ func (s *Server) ValidationTokenRequest(r *http.Request) (gt oauth2.GrantType, t
 	tgr = &oauth2.TokenGenerateRequest{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
+	}
+
+	client, err = s.Manager.GetClient(tgr.ClientID)
+	if err != nil {
+		err = oauth2.ErrInvalidClient
+		return
+	} else if tgr.ClientSecret != client.GetSecret() {
+		err = oauth2.ErrInvalidClient
+		return
+	}
+
+	grantTypeAllowed := s.ValidateClientGrantType(gt, client)
+	if !grantTypeAllowed {
+		err = oauth2.ErrUnsupportedGrantType
+		return
 	}
 
 	switch gt {
@@ -366,6 +398,14 @@ func (s *Server) ValidationTokenRequest(r *http.Request) (gt oauth2.GrantType, t
 		if tgr.Refresh == "" {
 			err = oauth2.ErrInvalidRequest
 		}
+	}
+	scopeAllowed := s.ValidateScope(tgr.Scope, client)
+	if !scopeAllowed {
+		err = oauth2.ErrInvalidScope
+		return
+	}
+	if tgr.Scope == "" {
+		tgr.Scope = strings.Join(client.GetScopes(), ",")
 	}
 	return
 }
@@ -473,28 +513,9 @@ func (s *Server) GetTokenData(ti oauth2.TokenDetails) (data map[string]interface
 
 // HandleTokenRequest token request handling
 func (s *Server) HandleTokenRequest(w http.ResponseWriter, r *http.Request) (err error) {
-	gt, tgr, verr := s.ValidationTokenRequest(r)
+	gt, tgr, client, verr := s.ValidationTokenRequest(r)
 	if verr != nil {
 		err = s.tokenError(w, verr)
-		return
-	}
-	client, err := s.Manager.GetClient(tgr.ClientID)
-	if err != nil {
-		err = s.tokenError(w, oauth2.ErrInvalidClient)
-		return
-	} else if tgr.ClientSecret != client.GetSecret() {
-		err = s.tokenError(w, oauth2.ErrInvalidClient)
-		return
-	}
-
-	grantTypeAllowed := s.ValidateClientGrantType(gt, client)
-	if !grantTypeAllowed {
-		err = s.tokenError(w, oauth2.ErrUnsupportedGrantType)
-		return
-	}
-	scopeAllowed := s.ValidateScope(tgr.Scope, client)
-	if !scopeAllowed {
-		err = s.tokenError(w, oauth2.ErrInvalidScope)
 		return
 	}
 
