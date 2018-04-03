@@ -21,7 +21,7 @@ func main() {
 	clientStore.Set("server", &oauth2.Client{
 		ID:                   "server",
 		Secret:               "server",
-		Domain:               "http://localhost:9094",
+		Domain:               "http://localhost:8080",
 		Scopes:               []string{"server", "all"},
 		AuthorizedGrantTypes: []oauth2.GrantType{oauth2.ClientCredentials},
 		AccessTokenExp:       time.Duration(8) * time.Hour,
