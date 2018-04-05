@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -10,20 +9,20 @@ import (
 	"github.com/gavv/httpexpect"
 	"github.com/hexagon-cloud/oauth2"
 	mgr "github.com/hexagon-cloud/oauth2/manager"
-	"github.com/hexagon-cloud/oauth2/server"
 	buntdbStore "github.com/hexagon-cloud/oauth2/store/buntdb"
-	memStore "github.com/hexagon-cloud/oauth2/store/memory"
+	memoryStore "github.com/hexagon-cloud/oauth2/store/memory"
+	"github.com/hexagon-cloud/oauth2/password/hmac"
 )
 
 var (
-	srv          *server.Server
+	srv          *Server
 	tsrv         *httptest.Server
 	manager      *mgr.Manager
 	csrv         *httptest.Server
-	clientID     = "server"
-	clientSecret = "server"
-	scopes       = []string{"server"}
-	grantType    = []oauth2.GrantType{oauth2.ClientCredentials}
+	clientID     = "app"
+	clientSecret = "app"
+	scopes       = []string{"server", "all"}
+	grantType    = []oauth2.GrantType{oauth2.ClientCredentials, oauth2.PasswordCredentials, oauth2.AuthorizationCode}
 )
 
 func init() {
@@ -31,14 +30,14 @@ func init() {
 	manager.MustTokenStorage(buntdbStore.NewMemoryTokenStore())
 }
 
-func clientStore(domain string) oauth2.ClientStore {
-	clientStore := memStore.NewClientStore()
-	clientStore.Set(clientID, &oauth2.Client{
-		ID:                   clientID,
-		Secret:               clientSecret,
-		Domain:               domain,
-		Scopes:               scopes,
-		AuthorizedGrantTypes: grantType,
+func clientStore(redirectUri string) oauth2.ClientStore {
+	clientStore := memoryStore.NewClientStore()
+	clientStore.Set(clientID, &oauth2.DefaultClient{
+		ID:          clientID,
+		Secret:      clientSecret,
+		RedirectUri: redirectUri,
+		Scopes:      scopes,
+		GrantTypes:  grantType,
 	})
 	return clientStore
 }
@@ -93,7 +92,7 @@ func TestAuthorizeCode(t *testing.T) {
 	defer csrv.Close()
 
 	manager.MapClientStorage(clientStore(csrv.URL))
-	srv = server.NewDefaultServer(manager)
+	srv = NewDefaultServer(manager)
 	srv.SetUserAuthorizationHandler(func(w http.ResponseWriter, r *http.Request) (userID string, err error) {
 		userID = "000000"
 		return
@@ -115,11 +114,34 @@ func TestImplicit(t *testing.T) {
 	defer tsrv.Close()
 	e := httpexpect.New(t, tsrv.URL)
 
-	csrv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	csrv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/oauth2":
+			r.ParseForm()
+			code, _ := r.Form.Get("code"), r.Form.Get("state")
+			//if state != "123" {
+			//	t.Error("unrecognized state:", state)
+			//	return
+			//}
+			resObj := e.POST("/token").
+				WithFormField("redirect_uri", csrv.URL+"/oauth2").
+				WithFormField("code", code).
+				WithFormField("grant_type", "authorization_code").
+				WithFormField("client_id", clientID).
+				WithBasicAuth(clientID, clientSecret).
+				Expect().
+				Status(http.StatusOK).
+				JSON().Object()
+
+			t.Logf("%#v\n", resObj.Raw())
+
+			validationAccessToken(t, resObj.Value("access_token").String().Raw())
+		}
+	}))
 	defer csrv.Close()
 
 	manager.MapClientStorage(clientStore(csrv.URL))
-	srv = server.NewDefaultServer(manager)
+	srv = NewDefaultServer(manager)
 	srv.SetUserAuthorizationHandler(func(w http.ResponseWriter, r *http.Request) (userID string, err error) {
 		userID = "000000"
 		return
@@ -142,20 +164,23 @@ func TestPasswordCredentials(t *testing.T) {
 	e := httpexpect.New(t, tsrv.URL)
 
 	manager.MapClientStorage(clientStore(""))
-	srv = server.NewDefaultServer(manager)
-	srv.SetPasswordAuthorizationHandler(func(username, password string) (userID string, err error) {
-		if username == "admin" && password == "123456" {
-			userID = "000000"
-			return
-		}
-		err = fmt.Errorf("user not found")
-		return
+	// password encoder
+	pwdEncoder := hmac.NewPasswordEncoder("key")
+	manager.MapPasswordEncoder(pwdEncoder)
+
+	// user store
+	userStore := memoryStore.NewUserStore()
+	userStore.Set("user1", &oauth2.DefaultUser{
+		Username: "user1",
+		Password: pwdEncoder.Encode("pwd1"),
 	})
+	manager.MapUserStorage(userStore)
+	srv = NewDefaultServer(manager)
 
 	resObj := e.POST("/token").
 		WithFormField("grant_type", "password").
-		WithFormField("username", "admin").
-		WithFormField("password", "123456").
+		WithFormField("username", "user1").
+		WithFormField("password", "pwd1").
 		WithFormField("scope", "all").
 		WithBasicAuth(clientID, clientSecret).
 		Expect().
@@ -176,8 +201,8 @@ func TestClientCredentials(t *testing.T) {
 
 	manager.MapClientStorage(clientStore(""))
 
-	srv = server.NewDefaultServer(manager)
-	srv.SetClientInfoHandler(server.ClientFormHandler)
+	srv = NewDefaultServer(manager)
+	srv.SetClientInfoHandler(ClientFormHandler)
 
 	srv.SetInternalErrorHandler(func(err error) (re *oauth2.ErrorResponse) {
 		t.Log("OAuth 2.0 Error:", err.Error())
@@ -190,7 +215,7 @@ func TestClientCredentials(t *testing.T) {
 
 	srv.SetAllowedGrantType(oauth2.ClientCredentials)
 	srv.SetAllowGetAccessRequest(false)
-	srv.SetExtensionFieldsHandler(func(ti oauth2.TokenDetails) (fieldsValue map[string]interface{}) {
+	srv.SetExtensionFieldsHandler(func(ti oauth2.Token) (fieldsValue map[string]interface{}) {
 		fieldsValue = map[string]interface{}{
 			"extension": "param",
 		}
@@ -199,10 +224,6 @@ func TestClientCredentials(t *testing.T) {
 	srv.SetAuthorizeScopeHandler(func(w http.ResponseWriter, r *http.Request) (scope string, err error) {
 		return
 	})
-	// srv.SetClientScopeHandler(func(clientID, scope string) (allowed bool, err error) {
-	// 	allowed = true
-	// 	return
-	// })
 
 	resObj := e.POST("/token").
 		WithFormField("grant_type", "client_credentials").
@@ -265,7 +286,7 @@ func TestRefreshing(t *testing.T) {
 	defer csrv.Close()
 
 	manager.MapClientStorage(clientStore(csrv.URL))
-	srv = server.NewDefaultServer(manager)
+	srv = NewDefaultServer(manager)
 	srv.SetUserAuthorizationHandler(func(w http.ResponseWriter, r *http.Request) (userID string, err error) {
 		userID = "000000"
 		return

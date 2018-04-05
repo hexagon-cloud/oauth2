@@ -7,13 +7,12 @@ import (
 	"github.com/hexagon-cloud/oauth2"
 	"github.com/hexagon-cloud/oauth2/generates"
 
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestAccess(t *testing.T) {
 	Convey("Test Access Generate", t, func() {
 		data := &oauth2.GenerateBasic{
-			Client: &oauth2.Client{
+			Client: &oauth2.DefaultClient{
 				ID:     "123456",
 				Secret: "123456",
 			},
@@ -25,7 +24,7 @@ func TestAccess(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(access, ShouldNotBeEmpty)
 		So(refresh, ShouldNotBeEmpty)
-		Println("\nAccess Token:" + access)
-		Println("Refresh Token:" + refresh)
+		Println("\nAccess DefaultToken:" + access)
+		Println("Refresh DefaultToken:" + refresh)
 	})
 }

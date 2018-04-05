@@ -17,7 +17,7 @@ func NewAuthorizeGenerate() *AuthorizeGenerate {
 // AuthorizeGenerate generate the authorize code
 type AuthorizeGenerate struct{}
 
-// Token based on the UUID generated token
+// DefaultToken based on the UUID generated token
 func (ag *AuthorizeGenerate) Token(data *oauth2.GenerateBasic) (code string, err error) {
 	buf := bytes.NewBufferString(data.Client.GetID())
 	buf.WriteString(data.UserID)

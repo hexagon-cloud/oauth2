@@ -1,4 +1,4 @@
-package sha256
+package hmac
 
 import (
 	"crypto/sha256"
@@ -15,7 +15,7 @@ func NewPasswordEncoder(secret string) *PasswordEncoder {
 	}
 }
 
-// PasswordEncoder password encoder uses SHA-256 hashing
+// PasswordEncoder password encoder uses HMAC SHA-256 hashing
 type PasswordEncoder struct {
 	hash hash.Hash
 }
@@ -29,9 +29,6 @@ func (spe *PasswordEncoder) Encode(rawPassword string) string {
 func (spe *PasswordEncoder) Matches(rawPassword string, encodedPassword string) bool {
 	spe.hash.Reset()
 	spe.hash.Write([]byte(rawPassword))
-	if hex.EncodeToString(spe.hash.Sum(nil)) == encodedPassword {
-		return true
-	}
-	return false
+	return hex.EncodeToString(spe.hash.Sum(nil)) == encodedPassword
 }
 

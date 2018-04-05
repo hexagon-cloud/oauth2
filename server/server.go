@@ -177,9 +177,9 @@ func (s *Server) ValidationAuthorizeRequest(r *http.Request) (req *AuthorizeRequ
 }
 
 // ValidateClientGrantType check the client allows the grant type
-func (s *Server) ValidateClientGrantType(gt oauth2.GrantType, cli oauth2.ClientDetails) bool {
+func (s *Server) ValidateClientGrantType(gt oauth2.GrantType, cli oauth2.Client) bool {
 	allowed := false
-	for _, agt := range cli.GetAuthorizedGrantTypes() {
+	for _, agt := range cli.GetGrantTypes() {
 		if agt == gt {
 			allowed = true
 		}
@@ -188,7 +188,7 @@ func (s *Server) ValidateClientGrantType(gt oauth2.GrantType, cli oauth2.ClientD
 }
 
 // ValidateScope check the client allows the authorized scope
-func (s *Server) ValidateScope(scope string, cli oauth2.ClientDetails) bool {
+func (s *Server) ValidateScope(scope string, cli oauth2.Client) bool {
 	if scope == "" {
 		return true
 	}
@@ -209,7 +209,7 @@ func (s *Server) ValidateScope(scope string, cli oauth2.ClientDetails) bool {
 }
 
 // GetAuthorizeToken get authorization token(code)
-func (s *Server) GetAuthorizeToken(req *AuthorizeRequest) (ti oauth2.TokenDetails, err error) {
+func (s *Server) GetAuthorizeToken(req *AuthorizeRequest) (ti oauth2.Token, err error) {
 	// load clientDetails
 	client, err := s.Manager.GetClient(req.ClientID)
 	if err != nil {
@@ -251,7 +251,7 @@ func (s *Server) GetAuthorizeToken(req *AuthorizeRequest) (ti oauth2.TokenDetail
 }
 
 // GetAuthorizeData get authorization response data
-func (s *Server) GetAuthorizeData(rt oauth2.ResponseType, ti oauth2.TokenDetails) (data map[string]interface{}) {
+func (s *Server) GetAuthorizeData(rt oauth2.ResponseType, ti oauth2.Token) (data map[string]interface{}) {
 	if rt == oauth2.CodeRsp {
 		data = map[string]interface{}{
 			"code": ti.GetCode(),
@@ -316,7 +316,7 @@ func (s *Server) HandleAuthorizeRequest(w http.ResponseWriter, r *http.Request) 
 }
 
 // ValidationTokenRequest the token request validation
-func (s *Server) ValidationTokenRequest(r *http.Request) (gt oauth2.GrantType, tgr *oauth2.TokenGenerateRequest, client oauth2.ClientDetails, err error) {
+func (s *Server) ValidationTokenRequest(r *http.Request) (gt oauth2.GrantType, tgr *oauth2.TokenGenerateRequest, client oauth2.Client, err error) {
 	if v := r.Method; !(v == "POST" ||
 		(s.Config.AllowGetAccessRequest && v == "GET")) {
 		err = oauth2.ErrInvalidRequest
@@ -416,7 +416,7 @@ func (s *Server) CheckGrantType(gt oauth2.GrantType) bool {
 }
 
 // GetAccessToken access token
-func (s *Server) GetAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGenerateRequest, cli oauth2.ClientDetails) (ti oauth2.TokenDetails, err error) {
+func (s *Server) GetAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGenerateRequest, cli oauth2.Client) (ti oauth2.Token, err error) {
 	if allowed := s.CheckGrantType(gt); !allowed {
 		err = oauth2.ErrUnsupportedGrantType
 		return
@@ -479,7 +479,7 @@ func (s *Server) GetAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGenerateRe
 }
 
 // GetTokenData token data
-func (s *Server) GetTokenData(ti oauth2.TokenDetails) (data map[string]interface{}) {
+func (s *Server) GetTokenData(ti oauth2.Token) (data map[string]interface{}) {
 	data = map[string]interface{}{
 		"access_token": ti.GetAccess(),
 		"token_type":   s.Config.TokenType,
@@ -602,7 +602,7 @@ func (s *Server) BearerAuth(r *http.Request) (accessToken string, ok bool) {
 
 // ValidationBearerToken validation the bearer tokens
 // https://tools.ietf.org/html/rfc6750
-func (s *Server) ValidationBearerToken(r *http.Request) (ti oauth2.TokenDetails, err error) {
+func (s *Server) ValidationBearerToken(r *http.Request) (ti oauth2.Token, err error) {
 	accessToken, ok := s.BearerAuth(r)
 	if !ok {
 		err = oauth2.ErrInvalidAccessToken

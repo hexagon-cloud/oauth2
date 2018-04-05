@@ -4,9 +4,9 @@ import (
 	"time"
 )
 
-// TokenDetails the token information model interface
-type TokenDetails interface {
-	New() TokenDetails
+// Token the token information model interface
+type Token interface {
+	New() Token
 
 	GetClientID() string
 	SetClientID(string)
@@ -40,12 +40,12 @@ type TokenDetails interface {
 }
 
 // NewToken create to token model instance
-func NewToken() *Token {
-	return &Token{}
+func NewToken() Token {
+	return &DefaultToken{}
 }
 
-// Token token model
-type Token struct {
+// DefaultToken token model
+type DefaultToken struct {
 	ClientID         string        `bson:"ClientID"`
 	UserID           string        `bson:"UserID"`
 	RedirectURI      string        `bson:"RedirectURI"`
@@ -62,136 +62,136 @@ type Token struct {
 }
 
 // New create to token model instance
-func (t *Token) New() TokenDetails {
+func (t *DefaultToken) New() Token {
 	return NewToken()
 }
 
 // GetClientID the client id
-func (t *Token) GetClientID() string {
+func (t *DefaultToken) GetClientID() string {
 	return t.ClientID
 }
 
 // SetClientID the client id
-func (t *Token) SetClientID(clientID string) {
+func (t *DefaultToken) SetClientID(clientID string) {
 	t.ClientID = clientID
 }
 
 // GetUserID the user id
-func (t *Token) GetUserID() string {
+func (t *DefaultToken) GetUserID() string {
 	return t.UserID
 }
 
 // SetUserID the user id
-func (t *Token) SetUserID(userID string) {
+func (t *DefaultToken) SetUserID(userID string) {
 	t.UserID = userID
 }
 
 // GetRedirectURI redirect URI
-func (t *Token) GetRedirectURI() string {
+func (t *DefaultToken) GetRedirectURI() string {
 	return t.RedirectURI
 }
 
 // SetRedirectURI redirect URI
-func (t *Token) SetRedirectURI(redirectURI string) {
+func (t *DefaultToken) SetRedirectURI(redirectURI string) {
 	t.RedirectURI = redirectURI
 }
 
 // GetScope get scope of authorization
-func (t *Token) GetScope() string {
+func (t *DefaultToken) GetScope() string {
 	return t.Scope
 }
 
 // SetScope get scope of authorization
-func (t *Token) SetScope(scope string) {
+func (t *DefaultToken) SetScope(scope string) {
 	t.Scope = scope
 }
 
 // GetCode authorization code
-func (t *Token) GetCode() string {
+func (t *DefaultToken) GetCode() string {
 	return t.Code
 }
 
 // SetCode authorization code
-func (t *Token) SetCode(code string) {
+func (t *DefaultToken) SetCode(code string) {
 	t.Code = code
 }
 
 // GetCodeCreateAt create Time
-func (t *Token) GetCodeCreateAt() time.Time {
+func (t *DefaultToken) GetCodeCreateAt() time.Time {
 	return t.CodeCreateAt
 }
 
 // SetCodeCreateAt create Time
-func (t *Token) SetCodeCreateAt(createAt time.Time) {
+func (t *DefaultToken) SetCodeCreateAt(createAt time.Time) {
 	t.CodeCreateAt = createAt
 }
 
 // GetCodeExpiresIn the lifetime in seconds of the authorization code
-func (t *Token) GetCodeExpiresIn() time.Duration {
+func (t *DefaultToken) GetCodeExpiresIn() time.Duration {
 	return t.CodeExpiresIn
 }
 
 // SetCodeExpiresIn the lifetime in seconds of the authorization code
-func (t *Token) SetCodeExpiresIn(exp time.Duration) {
+func (t *DefaultToken) SetCodeExpiresIn(exp time.Duration) {
 	t.CodeExpiresIn = exp
 }
 
-// GetAccess access Token
-func (t *Token) GetAccess() string {
+// GetAccess access DefaultToken
+func (t *DefaultToken) GetAccess() string {
 	return t.Access
 }
 
-// SetAccess access Token
-func (t *Token) SetAccess(access string) {
+// SetAccess access DefaultToken
+func (t *DefaultToken) SetAccess(access string) {
 	t.Access = access
 }
 
 // GetAccessCreateAt create Time
-func (t *Token) GetAccessCreateAt() time.Time {
+func (t *DefaultToken) GetAccessCreateAt() time.Time {
 	return t.AccessCreateAt
 }
 
 // SetAccessCreateAt create Time
-func (t *Token) SetAccessCreateAt(createAt time.Time) {
+func (t *DefaultToken) SetAccessCreateAt(createAt time.Time) {
 	t.AccessCreateAt = createAt
 }
 
 // GetAccessExpiresIn the lifetime in seconds of the access token
-func (t *Token) GetAccessExpiresIn() time.Duration {
+func (t *DefaultToken) GetAccessExpiresIn() time.Duration {
 	return t.AccessExpiresIn
 }
 
 // SetAccessExpiresIn the lifetime in seconds of the access token
-func (t *Token) SetAccessExpiresIn(exp time.Duration) {
+func (t *DefaultToken) SetAccessExpiresIn(exp time.Duration) {
 	t.AccessExpiresIn = exp
 }
 
-// GetRefresh refresh Token
-func (t *Token) GetRefresh() string {
+// GetRefresh refresh DefaultToken
+func (t *DefaultToken) GetRefresh() string {
 	return t.Refresh
 }
 
-// SetRefresh refresh Token
-func (t *Token) SetRefresh(refresh string) {
+// SetRefresh refresh DefaultToken
+func (t *DefaultToken) SetRefresh(refresh string) {
 	t.Refresh = refresh
 }
 
 // GetRefreshCreateAt create Time
-func (t *Token) GetRefreshCreateAt() time.Time {
+func (t *DefaultToken) GetRefreshCreateAt() time.Time {
 	return t.RefreshCreateAt
 }
 
 // SetRefreshCreateAt create Time
-func (t *Token) SetRefreshCreateAt(createAt time.Time) {
+func (t *DefaultToken) SetRefreshCreateAt(createAt time.Time) {
 	t.RefreshCreateAt = createAt
 }
 
 // GetRefreshExpiresIn the lifetime in seconds of the refresh token
-func (t *Token) GetRefreshExpiresIn() time.Duration {
+func (t *DefaultToken) GetRefreshExpiresIn() time.Duration {
 	return t.RefreshExpiresIn
 }
 
 // SetRefreshExpiresIn the lifetime in seconds of the refresh token
-func (t *Token) SetRefreshExpiresIn(exp time.Duration) {
+func (t *DefaultToken) SetRefreshExpiresIn(exp time.Duration) {
 	t.RefreshExpiresIn = exp
 }

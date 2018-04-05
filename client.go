@@ -2,66 +2,59 @@ package oauth2
 
 import "time"
 
-// ClientDetails interface for OAuth 2
-type ClientDetails interface {
+// Client interface for OAuth 2
+type Client interface {
 	GetID() string
 	GetSecret() string
-	GetDomain() string
-	GetUserID() string
+	GetRedirectUri() string
 	GetScopes() []string
-	GetAuthorizedGrantTypes() []GrantType
+	GetGrantTypes() []GrantType
 	GetAccessTokenExp() time.Duration
 	GetRefreshTokenExp() time.Duration
 }
 
-// Client client model
-type Client struct {
-	ID                   string
-	Secret               string
-	Domain               string
-	UserID               string
-	Scopes               []string
-	AuthorizedGrantTypes []GrantType
-	AccessTokenExp       time.Duration
-	RefreshTokenExp      time.Duration
+// DefaultClient s a simple default implementation of the Client interface.
+type DefaultClient struct {
+	ID              string
+	Secret          string
+	RedirectUri     string
+	Scopes          []string
+	GrantTypes      []GrantType
+	AccessTokenExp  time.Duration
+	RefreshTokenExp time.Duration
 }
 
 // GetID client id
-func (c *Client) GetID() string {
+func (c *DefaultClient) GetID() string {
 	return c.ID
 }
 
 // GetSecret client domain
-func (c *Client) GetSecret() string {
+func (c *DefaultClient) GetSecret() string {
 	return c.Secret
 }
 
-// GetDomain client domain
-func (c *Client) GetDomain() string {
-	return c.Domain
+// GetRedirectUri client domain
+func (c *DefaultClient) GetRedirectUri() string {
+	return c.RedirectUri
 }
 
-// GetUserID user id
-func (c *Client) GetUserID() string {
-	return c.UserID
-}
-
-// GetAuthorizedGrantTypes authorized grant types
-func (c *Client) GetAuthorizedGrantTypes() []GrantType {
-	return c.AuthorizedGrantTypes
+// GetGrantTypes authorized grant types
+func (c *DefaultClient) GetGrantTypes() []GrantType {
+	return c.GrantTypes
 }
 
 // GetScopes scopes
-func (c *Client) GetScopes() []string {
+func (c *DefaultClient) GetScopes() []string {
 	return c.Scopes
 }
 
 // GetAccessTokenExp access token validity seconds
-func (c *Client) GetAccessTokenExp() time.Duration {
+func (c *DefaultClient) GetAccessTokenExp() time.Duration {
 	return c.AccessTokenExp
 }
 
 // GetRefreshTokenExp refresh validity seconds
-func (c *Client) GetRefreshTokenExp() time.Duration {
+func (c *DefaultClient) GetRefreshTokenExp() time.Duration {
 	return c.RefreshTokenExp
 }

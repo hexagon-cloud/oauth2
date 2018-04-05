@@ -30,7 +30,7 @@ type (
 	AccessTokenExpHandler func(w http.ResponseWriter, r *http.Request) (exp time.Duration, err error)
 
 	// ExtensionFieldsHandler in response to the access token with the extension of the field
-	ExtensionFieldsHandler func(ti oauth2.TokenDetails) (fieldsValue map[string]interface{})
+	ExtensionFieldsHandler func(ti oauth2.Token) (fieldsValue map[string]interface{})
 )
 
 // ClientFormHandler get client data from form

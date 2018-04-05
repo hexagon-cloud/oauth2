@@ -7,13 +7,12 @@ import (
 	"github.com/hexagon-cloud/oauth2"
 	"github.com/hexagon-cloud/oauth2/generates"
 
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestAuthorize(t *testing.T) {
 	Convey("Test Authorize Generate", t, func() {
 		data := &oauth2.GenerateBasic{
-			Client: &oauth2.Client{
+			Client: &oauth2.DefaultClient{
 				ID:     "123456",
 				Secret: "123456",
 			},

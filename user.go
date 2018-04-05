@@ -1,6 +1,6 @@
 package oauth2
 
-type UserDetails interface {
+type User interface {
 	GetAuthorities() []string
 	GetUserID() string
 	GetUsername() string
@@ -11,12 +11,12 @@ type UserDetails interface {
 	IsEnabled() bool
 }
 
-// NewUser create to User model instance
-func NewUser() *User {
-	return &User{}
+// NewUser create to DefaultUser model instance
+func NewUser() User {
+	return &DefaultUser{}
 }
 
-type User struct {
+type DefaultUser struct {
 	UserID                string   `bson:"UserID"`
 	Username              string   `bson:"Username"`
 	Password              string   `bson:"Password"`
@@ -27,39 +27,39 @@ type User struct {
 	Authorities           []string `bson:"Authorities"`
 }
 
-func (u *User) GetAuthorities() []string {
+func (u *DefaultUser) GetAuthorities() []string {
 	return u.Authorities
 }
 
-func (u *User) GetUserID() string {
+func (u *DefaultUser) GetUserID() string {
 	return u.UserID
 }
 
-func (u *User) GetUsername() string {
+func (u *DefaultUser) GetUsername() string {
 	return u.Username
 }
 
-func (u *User) GetPassword() string {
+func (u *DefaultUser) GetPassword() string {
 	return u.Password
 }
 
-func (u *User) IsAccountNonExpired() bool {
+func (u *DefaultUser) IsAccountNonExpired() bool {
 	return u.AccountNonExpired
 }
 
-func (u *User) IsAccountNonLocked() bool {
+func (u *DefaultUser) IsAccountNonLocked() bool {
 	return u.AccountNonLocked
 }
 
-func (u *User) IsCredentialsNonExpired() bool {
+func (u *DefaultUser) IsCredentialsNonExpired() bool {
 	return u.CredentialsNonExpired
 }
 
-func (u *User) IsEnabled() bool {
+func (u *DefaultUser) IsEnabled() bool {
 	return u.Enabled
 }
 
-// New create to User model instance
-func (u *User) New() UserDetails {
+// New create to DefaultUser model instance
+func (u *DefaultUser) New() User {
 	return NewUser()
 }

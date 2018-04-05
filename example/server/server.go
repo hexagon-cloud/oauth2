@@ -9,7 +9,7 @@ import (
 	buntdbStore "github.com/hexagon-cloud/oauth2/store/buntdb"
 	memoryStore "github.com/hexagon-cloud/oauth2/store/memory"
 	"time"
-	"github.com/hexagon-cloud/oauth2/passoword/sha256"
+	"github.com/hexagon-cloud/oauth2/password/hmac"
 )
 
 func main() {
@@ -19,32 +19,32 @@ func main() {
 
 	// client store
 	clientStore := memoryStore.NewClientStore()
-	clientStore.Set("server", &oauth2.Client{
-		ID:                   "server",
-		Secret:               "server",
-		Domain:               "http://localhost:8080",
-		Scopes:               []string{"server", "all"},
-		AuthorizedGrantTypes: []oauth2.GrantType{oauth2.ClientCredentials},
-		AccessTokenExp:       time.Duration(8) * time.Hour,
-		RefreshTokenExp:      time.Duration(8) * time.Hour,
+	clientStore.Set("server", &oauth2.DefaultClient{
+		ID:              "server",
+		Secret:          "server",
+		RedirectUri:     "http://localhost:8080",
+		Scopes:          []string{"server", "all"},
+		GrantTypes:      []oauth2.GrantType{oauth2.ClientCredentials},
+		AccessTokenExp:  time.Duration(8) * time.Hour,
+		RefreshTokenExp: time.Duration(8) * time.Hour,
 	})
-	clientStore.Set("app", &oauth2.Client{
-		ID:                   "app",
-		Secret:               "app",
-		Scopes:               []string{"app"},
-		AuthorizedGrantTypes: []oauth2.GrantType{oauth2.PasswordCredentials},
-		AccessTokenExp:       time.Duration(8) * time.Hour,
-		RefreshTokenExp:      time.Duration(8) * time.Hour,
+	clientStore.Set("app", &oauth2.DefaultClient{
+		ID:              "app",
+		Secret:          "app",
+		Scopes:          []string{"app"},
+		GrantTypes:      []oauth2.GrantType{oauth2.PasswordCredentials},
+		AccessTokenExp:  time.Duration(8) * time.Hour,
+		RefreshTokenExp: time.Duration(8) * time.Hour,
 	})
 	mgr.MapClientStorage(clientStore)
 
 	// password encoder
-	pwdEncoder := sha256.NewPasswordEncoder("key")
+	pwdEncoder := hmac.NewPasswordEncoder("key")
 	mgr.MapPasswordEncoder(pwdEncoder)
 
 	// user store
 	userStore := memoryStore.NewUserStore()
-	userStore.Set("user1", &oauth2.User{
+	userStore.Set("user1", &oauth2.DefaultUser{
 		Username: "user1",
 		Password: pwdEncoder.Encode("pwd1"),
 	})

@@ -5,10 +5,10 @@ import "time"
 type (
 	// GenerateBasic provide the basis of the generated token data
 	GenerateBasic struct {
-		Client   ClientDetails
+		Client   Client
 		UserID   string
 		CreateAt time.Time
-		Token    TokenDetails
+		Token    Token
 	}
 
 	// AuthorizeGenerate generate the authorization code interface

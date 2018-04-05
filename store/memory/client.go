@@ -10,18 +10,18 @@ import (
 // NewClientStore new ClientStore using memory
 func NewClientStore() *ClientStore {
 	return &ClientStore{
-		data: make(map[string]oauth2.ClientDetails),
+		data: make(map[string]oauth2.Client),
 	}
 }
 
 // ClientStore client information store
 type ClientStore struct {
 	sync.RWMutex
-	data map[string]oauth2.ClientDetails
+	data map[string]oauth2.Client
 }
 
 // GetByID according to the ID for the client information
-func (cs *ClientStore) GetByID(id string) (cli oauth2.ClientDetails, err error) {
+func (cs *ClientStore) GetByID(id string) (cli oauth2.Client, err error) {
 	cs.RLock()
 	defer cs.RUnlock()
 	if c, ok := cs.data[id]; ok {
@@ -33,7 +33,7 @@ func (cs *ClientStore) GetByID(id string) (cli oauth2.ClientDetails, err error) 
 }
 
 // Set set client information
-func (cs *ClientStore) Set(id string, cli oauth2.ClientDetails) (err error) {
+func (cs *ClientStore) Set(id string, cli oauth2.Client) (err error) {
 	cs.Lock()
 	defer cs.Unlock()
 	cs.data[id] = cli

@@ -22,20 +22,20 @@ type Manager interface {
 	CheckInterface() (err error)
 
 	// get the client information
-	GetClient(clientID string) (cli ClientDetails, err error)
+	GetClient(clientID string) (cli Client, err error)
 
-	LoadUserByUsername(username string) (UserDetails, error)
+	LoadUserByUsername(username string) (User, error)
 
-	AuthenticateUser(username string, password string) (UserDetails, error)
+	AuthenticateUser(username string, password string) (User, error)
 
 	// generate the authorization token(code)
-	GenerateAuthToken(rt ResponseType, tgr *TokenGenerateRequest, cli ClientDetails) (authToken TokenDetails, err error)
+	GenerateAuthToken(rt ResponseType, tgr *TokenGenerateRequest, cli Client) (authToken Token, err error)
 
 	// generate the access token
-	GenerateAccessToken(rt GrantType, tgr *TokenGenerateRequest, cli ClientDetails) (accessToken TokenDetails, err error)
+	GenerateAccessToken(rt GrantType, tgr *TokenGenerateRequest, cli Client) (accessToken Token, err error)
 
 	// refreshing an access token
-	RefreshAccessToken(tgr *TokenGenerateRequest) (accessToken TokenDetails, err error)
+	RefreshAccessToken(tgr *TokenGenerateRequest) (accessToken Token, err error)
 
 	// use the access token to delete the token information
 	RemoveAccessToken(access string) (err error)
@@ -44,8 +44,8 @@ type Manager interface {
 	RemoveRefreshToken(refresh string) (err error)
 
 	// according to the access token for corresponding token information
-	LoadAccessToken(access string) (accessToken TokenDetails, err error)
+	LoadAccessToken(access string) (accessToken Token, err error)
 
 	// according to the refresh token for corresponding token information
-	LoadRefreshToken(refresh string) (refreshToken TokenDetails, err error)
+	LoadRefreshToken(refresh string) (refreshToken Token, err error)
 }

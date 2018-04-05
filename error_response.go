@@ -49,7 +49,7 @@ var (
 // Descriptions error description
 var Descriptions = map[error]string{
 	ErrInvalidRequest:          "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed",
-	ErrInvalidClient:           "Client authentication failed",
+	ErrInvalidClient:           "DefaultClient authentication failed",
 	ErrInvalidGrant:            "The provided authorization grant (e.g., authorization code, resource owner credentials) or refresh token is invalid, expired, revoked, does not match the redirection URI used in the authorization request, or was issued to another client",
 	ErrUnauthorizedClient:      "The client is not authorized to request an authorization code using this method",
 	ErrUnsupportedGrantType:    "The authorization grant type is not supported by the authorization server",

@@ -31,7 +31,7 @@ type TokenStore struct {
 }
 
 // Create create and store the new token information
-func (ts *TokenStore) Create(info oauth2.TokenDetails) (err error) {
+func (ts *TokenStore) Create(info oauth2.Token) (err error) {
 	ct := time.Now()
 	jv, err := json.Marshal(info)
 	if err != nil {
@@ -96,13 +96,13 @@ func (ts *TokenStore) RemoveByRefresh(refresh string) (err error) {
 	return
 }
 
-func (ts *TokenStore) getData(key string) (ti oauth2.TokenDetails, err error) {
+func (ts *TokenStore) getData(key string) (ti oauth2.Token, err error) {
 	verr := ts.db.View(func(tx *buntdb.Tx) (err error) {
 		jv, err := tx.Get(key)
 		if err != nil {
 			return
 		}
-		var tm oauth2.Token
+		var tm oauth2.DefaultToken
 		err = json.Unmarshal([]byte(jv), &tm)
 		if err != nil {
 			return
@@ -138,13 +138,13 @@ func (ts *TokenStore) getBasicID(key string) (basicID string, err error) {
 }
 
 // GetByCode use the authorization code for token information data
-func (ts *TokenStore) GetByCode(code string) (ti oauth2.TokenDetails, err error) {
+func (ts *TokenStore) GetByCode(code string) (ti oauth2.Token, err error) {
 	ti, err = ts.getData(code)
 	return
 }
 
 // GetByAccess use the access token for token information data
-func (ts *TokenStore) GetByAccess(access string) (ti oauth2.TokenDetails, err error) {
+func (ts *TokenStore) GetByAccess(access string) (ti oauth2.Token, err error) {
 	basicID, err := ts.getBasicID(access)
 	if err != nil {
 		return
@@ -154,7 +154,7 @@ func (ts *TokenStore) GetByAccess(access string) (ti oauth2.TokenDetails, err er
 }
 
 // GetByRefresh use the refresh token for token information data
-func (ts *TokenStore) GetByRefresh(refresh string) (ti oauth2.TokenDetails, err error) {
+func (ts *TokenStore) GetByRefresh(refresh string) (ti oauth2.Token, err error) {
 	basicID, err := ts.getBasicID(refresh)
 	if err != nil {
 		return

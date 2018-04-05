@@ -7,7 +7,6 @@ import (
 
 	"github.com/hexagon-cloud/oauth2"
 
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestTokenStore(t *testing.T) {
@@ -28,7 +27,7 @@ func TestTokenStore(t *testing.T) {
 
 func testToken(store oauth2.TokenStore) {
 	Convey("Test authorization code store", func() {
-		info := &oauth2.Token{
+		info := &oauth2.DefaultToken{
 			ClientID:      "1",
 			UserID:        "1_1",
 			RedirectURI:   "http://localhost/",
@@ -53,7 +52,7 @@ func testToken(store oauth2.TokenStore) {
 	})
 
 	Convey("Test access token store", func() {
-		info := &oauth2.Token{
+		info := &oauth2.DefaultToken{
 			ClientID:        "1",
 			UserID:          "1_1",
 			RedirectURI:     "http://localhost/",
@@ -78,7 +77,7 @@ func testToken(store oauth2.TokenStore) {
 	})
 
 	Convey("Test refresh token store", func() {
-		info := &oauth2.Token{
+		info := &oauth2.DefaultToken{
 			ClientID:         "1",
 			UserID:           "1_2",
 			RedirectURI:      "http://localhost/",
@@ -106,7 +105,7 @@ func testToken(store oauth2.TokenStore) {
 	})
 
 	Convey("Test TTL", func() {
-		info := &oauth2.Token{
+		info := &oauth2.DefaultToken{
 			ClientID:         "1",
 			UserID:           "1_1",
 			RedirectURI:      "http://localhost/",

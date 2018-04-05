@@ -37,7 +37,7 @@ type Manager struct {
 	validateURI ValidateURIHandler
 }
 
-func (m *Manager) AuthenticateUser(username string, password string) (user oauth2.UserDetails, err error) {
+func (m *Manager) AuthenticateUser(username string, password string) (user oauth2.User, err error) {
 	m.injector.Invoke(func(us oauth2.UserStore, encoder oauth2.PasswordEncoder) {
 		user, err = us.GetByUsername(username)
 		if err != nil {
@@ -52,7 +52,7 @@ func (m *Manager) AuthenticateUser(username string, password string) (user oauth
 	return
 }
 
-func (m *Manager) LoadUserByUsername(username string) (user oauth2.UserDetails, err error) {
+func (m *Manager) LoadUserByUsername(username string) (user oauth2.User, err error) {
 	m.injector.Invoke(func(us oauth2.UserStore) {
 		user, err = us.GetByUsername(username)
 	})
@@ -113,7 +113,7 @@ func (m *Manager) SetValidateURIHandler(handler ValidateURIHandler) {
 }
 
 // MapTokenModel mapping the token information model
-func (m *Manager) MapTokenModel(token oauth2.TokenDetails) {
+func (m *Manager) MapTokenModel(token oauth2.Token) {
 	m.injector.Map(token)
 }
 
@@ -174,7 +174,7 @@ func (m *Manager) MapPasswordEncoder(encoder oauth2.PasswordEncoder) {
 // CheckInterface check the interface implementation
 func (m *Manager) CheckInterface() error {
 	_, err := m.injector.Invoke(func(
-		oauth2.TokenDetails, oauth2.AccessGenerate, oauth2.TokenStore,
+		oauth2.Token, oauth2.AccessGenerate, oauth2.TokenStore,
 		oauth2.ClientStore, oauth2.AuthorizeGenerate,
 	) {
 	})
@@ -182,7 +182,7 @@ func (m *Manager) CheckInterface() error {
 }
 
 // GetClient get the client information
-func (m *Manager) GetClient(clientID string) (cli oauth2.ClientDetails, err error) {
+func (m *Manager) GetClient(clientID string) (cli oauth2.Client, err error) {
 	_, ierr := m.injector.Invoke(func(stor oauth2.ClientStore) {
 		cli, err = stor.GetByID(clientID)
 		if err != nil {
@@ -198,12 +198,12 @@ func (m *Manager) GetClient(clientID string) (cli oauth2.ClientDetails, err erro
 }
 
 // GenerateAuthToken generate the authorization token(code)
-func (m *Manager) GenerateAuthToken(rt oauth2.ResponseType, tgr *oauth2.TokenGenerateRequest, cli oauth2.ClientDetails) (authToken oauth2.TokenDetails, err error) {
-	if verr := m.validateURI(cli.GetDomain(), tgr.RedirectURI); verr != nil {
+func (m *Manager) GenerateAuthToken(rt oauth2.ResponseType, tgr *oauth2.TokenGenerateRequest, cli oauth2.Client) (authToken oauth2.Token, err error) {
+	if verr := m.validateURI(cli.GetRedirectUri(), tgr.RedirectURI); verr != nil {
 		err = verr
 		return
 	}
-	_, ierr := m.injector.Invoke(func(ti oauth2.TokenDetails, gen oauth2.AuthorizeGenerate, tgen oauth2.AccessGenerate, stor oauth2.TokenStore) {
+	_, ierr := m.injector.Invoke(func(ti oauth2.Token, gen oauth2.AuthorizeGenerate, tgen oauth2.AccessGenerate, stor oauth2.TokenStore) {
 		ti = ti.New()
 		ti.SetClientID(tgr.ClientID)
 		ti.SetUserID(tgr.UserID)
@@ -269,7 +269,7 @@ func (m *Manager) GenerateAuthToken(rt oauth2.ResponseType, tgr *oauth2.TokenGen
 }
 
 // get authorization code data
-func (m *Manager) getAuthorizationCode(code string) (info oauth2.TokenDetails, err error) {
+func (m *Manager) getAuthorizationCode(code string) (info oauth2.Token, err error) {
 	_, ierr := m.injector.Invoke(func(stor oauth2.TokenStore) {
 		ti, terr := stor.GetByCode(code)
 		if terr != nil {
@@ -299,7 +299,7 @@ func (m *Manager) delAuthorizationCode(code string) (err error) {
 }
 
 // GenerateAccessToken generate the access token
-func (m *Manager) GenerateAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGenerateRequest, cli oauth2.ClientDetails) (accessToken oauth2.TokenDetails, err error) {
+func (m *Manager) GenerateAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGenerateRequest, cli oauth2.Client) (accessToken oauth2.Token, err error) {
 	if gt == oauth2.AuthorizationCode {
 		ti, terr := m.getAuthorizationCode(tgr.Code)
 		if terr != nil {
@@ -319,7 +319,7 @@ func (m *Manager) GenerateAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGene
 		}
 	}
 
-	_, ierr := m.injector.Invoke(func(tokenDetails oauth2.TokenDetails, gen oauth2.AccessGenerate, stor oauth2.TokenStore) {
+	_, ierr := m.injector.Invoke(func(tokenDetails oauth2.Token, gen oauth2.AccessGenerate, stor oauth2.TokenStore) {
 		// TODO. load existingAccessToken
 
 		tokenDetails = tokenDetails.New()
@@ -375,7 +375,7 @@ func (m *Manager) GenerateAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGene
 }
 
 // RefreshAccessToken refreshing an access token
-func (m *Manager) RefreshAccessToken(tgr *oauth2.TokenGenerateRequest) (accessToken oauth2.TokenDetails, err error) {
+func (m *Manager) RefreshAccessToken(tgr *oauth2.TokenGenerateRequest) (accessToken oauth2.Token, err error) {
 	cli, err := m.GetClient(tgr.ClientID)
 	if err != nil {
 		return
@@ -501,7 +501,7 @@ func (m *Manager) RemoveRefreshToken(refresh string) (err error) {
 }
 
 // LoadAccessToken according to the access token for corresponding token information
-func (m *Manager) LoadAccessToken(access string) (info oauth2.TokenDetails, err error) {
+func (m *Manager) LoadAccessToken(access string) (info oauth2.Token, err error) {
 	if access == "" {
 		err = oauth2.ErrInvalidAccessToken
 		return
@@ -530,7 +530,7 @@ func (m *Manager) LoadAccessToken(access string) (info oauth2.TokenDetails, err 
 }
 
 // LoadRefreshToken according to the refresh token for corresponding token information
-func (m *Manager) LoadRefreshToken(refresh string) (info oauth2.TokenDetails, err error) {
+func (m *Manager) LoadRefreshToken(refresh string) (info oauth2.Token, err error) {
 	if refresh == "" {
 		err = oauth2.ErrInvalidRefreshToken
 		return

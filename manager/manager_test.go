@@ -8,7 +8,6 @@ import (
 	"github.com/hexagon-cloud/oauth2/store/buntdb"
 	"github.com/hexagon-cloud/oauth2/store/memory"
 
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestManager(t *testing.T) {
@@ -18,10 +17,10 @@ func TestManager(t *testing.T) {
 		manager.MustTokenStorage(buntdb.NewMemoryTokenStore())
 
 		clientStore := memory.NewMemoryClientStore()
-		clientStore.Set("1", &oauth2.Client{
-			ID:     "1",
-			Secret: "11",
-			Domain: "http://localhost",
+		clientStore.Set("1", &oauth2.DefaultClient{
+			ID:          "1",
+			Secret:      "11",
+			RedirectUri: "http://localhost",
 		})
 		manager.MapClientStorage(clientStore)
 
@@ -43,7 +42,7 @@ func TestManager(t *testing.T) {
 			So(cli.GetSecret(), ShouldEqual, "11")
 		})
 
-		Convey("Token test", func() {
+		Convey("DefaultToken test", func() {
 			testManager(tgr, manager)
 		})
 	})
