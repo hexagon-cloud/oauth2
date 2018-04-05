@@ -1,14 +1,9 @@
 package oauth2
 
 type User interface {
-	GetAuthorities() []string
-	GetUserID() string
+	GetOpenid() string
 	GetUsername() string
 	GetPassword() string
-	IsAccountNonExpired() bool
-	IsAccountNonLocked() bool
-	IsCredentialsNonExpired() bool
-	IsEnabled() bool
 }
 
 // NewUser create to DefaultUser model instance
@@ -17,22 +12,13 @@ func NewUser() User {
 }
 
 type DefaultUser struct {
-	UserID                string   `json:"userId"`
-	Username              string   `json:"username"`
-	Password              string   `json:"-"`
-	AccountNonExpired     bool     `json:"isAccountNonExpired"`
-	AccountNonLocked      bool     `json:"isAccountNonLocked"`
-	CredentialsNonExpired bool     `json:"isCredentialsNonExpired"`
-	Enabled               bool     `json:"isEnabled"`
-	Authorities           []string `json:"authorities"`
+	Openid   string `json:"openid"`
+	Username string `json:"username"`
+	Password string `json:"-"`
 }
 
-func (u *DefaultUser) GetAuthorities() []string {
-	return u.Authorities
-}
-
-func (u *DefaultUser) GetUserID() string {
-	return u.UserID
+func (u *DefaultUser) GetOpenid() string {
+	return u.Openid
 }
 
 func (u *DefaultUser) GetUsername() string {
@@ -41,22 +27,6 @@ func (u *DefaultUser) GetUsername() string {
 
 func (u *DefaultUser) GetPassword() string {
 	return u.Password
-}
-
-func (u *DefaultUser) IsAccountNonExpired() bool {
-	return u.AccountNonExpired
-}
-
-func (u *DefaultUser) IsAccountNonLocked() bool {
-	return u.AccountNonLocked
-}
-
-func (u *DefaultUser) IsCredentialsNonExpired() bool {
-	return u.CredentialsNonExpired
-}
-
-func (u *DefaultUser) IsEnabled() bool {
-	return u.Enabled
 }
 
 // New create to DefaultUser model instance
