@@ -108,6 +108,10 @@ func (ts *TokenStore) getData(key string) (ti oauth2.Token, err error) {
 			return
 		}
 		ti = &tm
+		d, err := tx.TTL(key)
+		if err == nil {
+			ti.SetAccessExpiresIn(d)
+		}
 		return
 	})
 	if verr != nil {

@@ -45,7 +45,7 @@ func main() {
 	// user store
 	userStore := memoryStore.NewUserStore()
 	userStore.Set("user1", &oauth2.DefaultUser{
-		UserID:   "1",
+		Openid:   "1",
 		Username: "user1",
 		Password: pwdEncoder.Encode("pwd1"),
 	})

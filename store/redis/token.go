@@ -115,12 +115,18 @@ func (rs *TokenStore) getData(key string) (ti oauth2.Token, err error) {
 	if err != nil {
 		return
 	}
-	var tm models.Token
+	var tm oauth2.Token
 	if verr := json.Unmarshal(iv, &tm); verr != nil {
 		err = verr
 		return
 	}
 	ti = &tm
+
+	ttl := rs.cli.PTTL(key)
+	if verr := ttl.Err(); verr == nil {
+		ti.SetAccessExpiresIn(ttl.Val())
+	}
+
 	return
 }
 
