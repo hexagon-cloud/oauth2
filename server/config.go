@@ -8,8 +8,8 @@ import (
 
 // Config configuration parameters
 type Config struct {
-	TokenType             string                // token type
-	AllowGetAccessRequest bool                  // to allow GET requests for the token
+	TokenType             string                // json type
+	AllowGetAccessRequest bool                  // to allow GET requests for the json
 	AllowedResponseTypes  []oauth2.ResponseType // allow the authorization type
 	AllowedGrantTypes     []oauth2.GrantType    // allow the grant type
 }

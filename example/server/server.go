@@ -45,6 +45,7 @@ func main() {
 	// user store
 	userStore := memoryStore.NewUserStore()
 	userStore.Set("user1", &oauth2.DefaultUser{
+		UserID:   "1",
 		Username: "user1",
 		Password: pwdEncoder.Encode("pwd1"),
 	})
@@ -70,6 +71,20 @@ func main() {
 
 	http.HandleFunc("/oauth/token", func(w http.ResponseWriter, r *http.Request) {
 		err := uaaServer.HandleTokenRequest(w, r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	})
+
+	http.HandleFunc("/oauth/check_token", func(w http.ResponseWriter, r *http.Request) {
+		err := uaaServer.HandleCheckTokenRequest(w, r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	})
+
+	http.HandleFunc("/oauth/user_info", func(w http.ResponseWriter, r *http.Request) {
+		err := uaaServer.HandleUserInfoRequest(w, r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}

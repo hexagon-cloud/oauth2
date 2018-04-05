@@ -10,8 +10,8 @@ type Token interface {
 
 	GetClientID() string
 	SetClientID(string)
-	GetUserID() string
-	SetUserID(string)
+	GetUsername() string
+	SetUsername(string)
 	GetRedirectURI() string
 	SetRedirectURI(string)
 	GetScope() string
@@ -47,7 +47,7 @@ func NewToken() Token {
 // DefaultToken token model
 type DefaultToken struct {
 	ClientID         string        `bson:"ClientID"`
-	UserID           string        `bson:"UserID"`
+	Username         string        `bson:"Username"`
 	RedirectURI      string        `bson:"RedirectURI"`
 	Scope            string        `bson:"Scope"`
 	Code             string        `bson:"Code"`
@@ -76,14 +76,14 @@ func (t *DefaultToken) SetClientID(clientID string) {
 	t.ClientID = clientID
 }
 
-// GetUserID the user id
-func (t *DefaultToken) GetUserID() string {
-	return t.UserID
+// GetUsername the user id
+func (t *DefaultToken) GetUsername() string {
+	return t.Username
 }
 
-// SetUserID the user id
-func (t *DefaultToken) SetUserID(userID string) {
-	t.UserID = userID
+// SetUsername the user id
+func (t *DefaultToken) SetUsername(userID string) {
+	t.Username = userID
 }
 
 // GetRedirectURI redirect URI

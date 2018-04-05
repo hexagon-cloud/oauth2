@@ -206,7 +206,7 @@ func (m *Manager) GenerateAuthToken(rt oauth2.ResponseType, tgr *oauth2.TokenGen
 	_, ierr := m.injector.Invoke(func(ti oauth2.Token, gen oauth2.AuthorizeGenerate, tgen oauth2.AccessGenerate, stor oauth2.TokenStore) {
 		ti = ti.New()
 		ti.SetClientID(tgr.ClientID)
-		ti.SetUserID(tgr.UserID)
+		ti.SetUsername(tgr.UserID)
 		ti.SetRedirectURI(tgr.RedirectURI)
 		ti.SetScope(tgr.Scope)
 
@@ -312,7 +312,7 @@ func (m *Manager) GenerateAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGene
 			err = verr
 			return
 		}
-		tgr.UserID = ti.GetUserID()
+		tgr.UserID = ti.GetUsername()
 		tgr.Scope = ti.GetScope()
 		if exp := ti.GetAccessExpiresIn(); exp > 0 {
 			tgr.AccessTokenExp = exp
@@ -337,7 +337,7 @@ func (m *Manager) GenerateAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGene
 			return
 		}
 		tokenDetails.SetClientID(tgr.ClientID)
-		tokenDetails.SetUserID(tgr.UserID)
+		tokenDetails.SetUsername(tgr.UserID)
 		tokenDetails.SetRedirectURI(tgr.RedirectURI)
 		tokenDetails.SetScope(tgr.Scope)
 		tokenDetails.SetAccessCreateAt(td.CreateAt)
@@ -396,7 +396,7 @@ func (m *Manager) RefreshAccessToken(tgr *oauth2.TokenGenerateRequest) (accessTo
 	_, ierr := m.injector.Invoke(func(stor oauth2.TokenStore, gen oauth2.AccessGenerate) {
 		td := &oauth2.GenerateBasic{
 			Client:   cli,
-			UserID:   ti.GetUserID(),
+			UserID:   ti.GetUsername(),
 			CreateAt: time.Now(),
 			Token:    ti,
 		}

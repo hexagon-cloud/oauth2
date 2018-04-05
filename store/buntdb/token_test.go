@@ -29,7 +29,7 @@ func testToken(store oauth2.TokenStore) {
 	Convey("Test authorization code store", func() {
 		info := &oauth2.DefaultToken{
 			ClientID:      "1",
-			UserID:        "1_1",
+			Username:      "1_1",
 			RedirectURI:   "http://localhost/",
 			Scope:         "all",
 			Code:          "11_11_11",
@@ -41,7 +41,7 @@ func testToken(store oauth2.TokenStore) {
 
 		cinfo, err := store.GetByCode(info.Code)
 		So(err, ShouldBeNil)
-		So(cinfo.GetUserID(), ShouldEqual, info.UserID)
+		So(cinfo.GetUsername(), ShouldEqual, info.Username)
 
 		err = store.RemoveByCode(info.Code)
 		So(err, ShouldBeNil)
@@ -54,7 +54,7 @@ func testToken(store oauth2.TokenStore) {
 	Convey("Test access token store", func() {
 		info := &oauth2.DefaultToken{
 			ClientID:        "1",
-			UserID:          "1_1",
+			Username:        "1_1",
 			RedirectURI:     "http://localhost/",
 			Scope:           "all",
 			Access:          "1_1_1",
@@ -66,7 +66,7 @@ func testToken(store oauth2.TokenStore) {
 
 		ainfo, err := store.GetByAccess(info.GetAccess())
 		So(err, ShouldBeNil)
-		So(ainfo.GetUserID(), ShouldEqual, info.GetUserID())
+		So(ainfo.GetUsername(), ShouldEqual, info.GetUsername())
 
 		err = store.RemoveByAccess(info.GetAccess())
 		So(err, ShouldBeNil)
@@ -79,7 +79,7 @@ func testToken(store oauth2.TokenStore) {
 	Convey("Test refresh token store", func() {
 		info := &oauth2.DefaultToken{
 			ClientID:         "1",
-			UserID:           "1_2",
+			Username:         "1_2",
 			RedirectURI:      "http://localhost/",
 			Scope:            "all",
 			Access:           "1_2_1",
@@ -94,7 +94,7 @@ func testToken(store oauth2.TokenStore) {
 
 		rinfo, err := store.GetByRefresh(info.GetRefresh())
 		So(err, ShouldBeNil)
-		So(rinfo.GetUserID(), ShouldEqual, info.GetUserID())
+		So(rinfo.GetUsername(), ShouldEqual, info.GetUsername())
 
 		err = store.RemoveByRefresh(info.GetRefresh())
 		So(err, ShouldBeNil)
@@ -107,7 +107,7 @@ func testToken(store oauth2.TokenStore) {
 	Convey("Test TTL", func() {
 		info := &oauth2.DefaultToken{
 			ClientID:         "1",
-			UserID:           "1_1",
+			Username:         "1_1",
 			RedirectURI:      "http://localhost/",
 			Scope:            "all",
 			Access:           "1_3_1",

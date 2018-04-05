@@ -17,14 +17,14 @@ func NewUser() User {
 }
 
 type DefaultUser struct {
-	UserID                string   `bson:"UserID"`
-	Username              string   `bson:"Username"`
-	Password              string   `bson:"Password"`
-	AccountNonExpired     bool     `bson:"AccountNonExpired"`
-	AccountNonLocked      bool     `bson:"AccountNonLocked"`
-	CredentialsNonExpired bool     `bson:"CredentialsNonExpired"`
-	Enabled               bool     `bson:"Enabled"`
-	Authorities           []string `bson:"Authorities"`
+	UserID                string   `json:"userId"`
+	Username              string   `json:"username"`
+	Password              string   `json:"-"`
+	AccountNonExpired     bool     `json:"isAccountNonExpired"`
+	AccountNonLocked      bool     `json:"isAccountNonLocked"`
+	CredentialsNonExpired bool     `json:"isCredentialsNonExpired"`
+	Enabled               bool     `json:"isEnabled"`
+	Authorities           []string `json:"authorities"`
 }
 
 func (u *DefaultUser) GetAuthorities() []string {

@@ -54,6 +54,16 @@ func testServer(t *testing.T, w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			t.Error(err)
 		}
+	case "check_token":
+		err := srv.HandleCheckTokenRequest(w, r)
+		if err != nil {
+			t.Error(err)
+		}
+	case "user_info":
+		err := srv.HandleUserInfoRequest(w, r)
+		if err != nil {
+			t.Error(err)
+		}
 	}
 }
 
@@ -148,7 +158,7 @@ func TestImplicit(t *testing.T) {
 	})
 
 	e.GET("/authorize").
-		WithQuery("response_type", "token").
+		WithQuery("response_type", "json").
 		WithQuery("client_id", clientID).
 		WithQuery("scope", "all").
 		WithQuery("state", "123").
@@ -190,6 +200,12 @@ func TestPasswordCredentials(t *testing.T) {
 	t.Logf("%#v\n", resObj.Raw())
 
 	validationAccessToken(t, resObj.Value("access_token").String().Raw())
+	usrObj := e.GET("/user_info").
+		WithHeader("Authorization",
+		"Bearer "+resObj.Value("access_token").String().Raw()).
+		Expect().Status(http.StatusOK).JSON().Object()
+
+	t.Logf("%#v\n", usrObj.Raw())
 }
 
 func TestClientCredentials(t *testing.T) {
@@ -255,7 +271,7 @@ func TestRefreshing(t *testing.T) {
 				t.Error("unrecognized state:", state)
 				return
 			}
-			jresObj := e.POST("/token").
+			jresObj := e.POST("/json").
 				WithFormField("redirect_uri", csrv.URL+"/oauth2").
 				WithFormField("code", code).
 				WithFormField("grant_type", "authorization_code").
@@ -269,7 +285,7 @@ func TestRefreshing(t *testing.T) {
 
 			validationAccessToken(t, jresObj.Value("access_token").String().Raw())
 
-			resObj := e.POST("/token").
+			resObj := e.POST("/json").
 				WithFormField("grant_type", "refresh_token").
 				WithFormField("scope", "one").
 				WithFormField("refresh_token", jresObj.Value("refresh_token").String().Raw()).
@@ -301,7 +317,7 @@ func TestRefreshing(t *testing.T) {
 		Expect().Status(http.StatusOK)
 }
 
-// validation access token
+// validation access json
 func validationAccessToken(t *testing.T, accessToken string) {
 	req := httptest.NewRequest("GET", "http://example.com", nil)
 
@@ -313,6 +329,6 @@ func validationAccessToken(t *testing.T, accessToken string) {
 		return
 	}
 	if ti.GetClientID() != clientID {
-		t.Error("invalid access token")
+		t.Error("invalid access json")
 	}
 }
