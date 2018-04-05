@@ -539,8 +539,8 @@ func (s *Server) HandleCheckTokenRequest(w http.ResponseWriter, r *http.Request)
 	return
 }
 
-// HandleUserInfoRequest get user info request handling
-func (s *Server) HandleUserInfoRequest(w http.ResponseWriter, r *http.Request) (err error) {
+// HandleTokenUserRequest get user info request handling
+func (s *Server) HandleTokenUserRequest(w http.ResponseWriter, r *http.Request) (err error) {
 	token, err := s.ValidationBearerToken(r)
 	if err != nil {
 		err = s.tokenError(w, err)

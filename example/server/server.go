@@ -83,8 +83,8 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/oauth/user_info", func(w http.ResponseWriter, r *http.Request) {
-		err := uaaServer.HandleUserInfoRequest(w, r)
+	http.HandleFunc("/oauth/me", func(w http.ResponseWriter, r *http.Request) {
+		err := uaaServer.HandleTokenUserRequest(w, r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}

@@ -60,7 +60,7 @@ func testServer(t *testing.T, w http.ResponseWriter, r *http.Request) {
 			t.Error(err)
 		}
 	case "user_info":
-		err := srv.HandleUserInfoRequest(w, r)
+		err := srv.HandleTokenUserRequest(w, r)
 		if err != nil {
 			t.Error(err)
 		}
