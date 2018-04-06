@@ -2,8 +2,6 @@ package server
 
 import (
 	"net/http"
-	"time"
-
 	"github.com/hexagon-cloud/oauth2"
 )
 
@@ -14,22 +12,13 @@ type (
 	// UserAuthorizationHandler get user id from request authorization
 	UserAuthorizationHandler func(w http.ResponseWriter, r *http.Request) (userID string, err error)
 
-	// RefreshingScopeHandler check the scope of the refreshing json
-	RefreshingScopeHandler func(newScope, oldScope string) (allowed bool, err error)
-
 	// ResponseErrorHandler response error handing
 	ResponseErrorHandler func(re *oauth2.ErrorResponse)
 
 	// InternalErrorHandler internal error handing
 	InternalErrorHandler func(err error) (re *oauth2.ErrorResponse)
 
-	// AuthorizeScopeHandler set the authorized scope
-	AuthorizeScopeHandler func(w http.ResponseWriter, r *http.Request) (scope string, err error)
-
-	// AccessTokenExpHandler set expiration date for the access json
-	AccessTokenExpHandler func(w http.ResponseWriter, r *http.Request) (exp time.Duration, err error)
-
-	// ExtensionFieldsHandler in response to the access json with the extension of the field
+	// ExtensionFieldsHandler in response to the access token with the extension of the field
 	ExtensionFieldsHandler func(ti oauth2.Token) (fieldsValue map[string]interface{})
 )
 

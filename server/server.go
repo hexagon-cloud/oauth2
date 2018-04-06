@@ -44,12 +44,9 @@ type Server struct {
 	Manager                  oauth2.Manager
 	ClientInfoHandler        ClientInfoHandler
 	UserAuthorizationHandler UserAuthorizationHandler
-	RefreshingScopeHandler   RefreshingScopeHandler
 	ResponseErrorHandler     ResponseErrorHandler
 	InternalErrorHandler     InternalErrorHandler
 	ExtensionFieldsHandler   ExtensionFieldsHandler
-	AccessTokenExpHandler    AccessTokenExpHandler
-	AuthorizeScopeHandler    AuthorizeScopeHandler
 }
 
 func (s *Server) redirectError(w http.ResponseWriter, req *AuthorizeRequest, err error) (uerr error) {
@@ -204,7 +201,7 @@ func (s *Server) ValidateClientScope(scope string, cli oauth2.Client) bool {
 	return true
 }
 
-// GetAuthorizeToken get authorization json(code)
+// GetAuthorizeToken get authorization token(code)
 func (s *Server) GetAuthorizeToken(req *AuthorizeRequest) (ti oauth2.Token, err error) {
 	// load clientDetails
 	client, err := s.Manager.GetClient(req.ClientID)
@@ -278,30 +275,8 @@ func (s *Server) HandleAuthorizeRequest(w http.ResponseWriter, r *http.Request) 
 
 	req.UserID = userID
 
-	// specify the scope of authorization
-	if fn := s.AuthorizeScopeHandler; fn != nil {
-
-		scope, verr := fn(w, r)
-		if verr != nil {
-			err = verr
-			return
-		} else if scope != "" {
-			req.Scope = scope
-		}
-	}
-
-	// specify the expiration time of access json
-	if fn := s.AccessTokenExpHandler; fn != nil {
-
-		exp, verr := fn(w, r)
-		if verr != nil {
-			err = verr
-			return
-		}
-		req.AccessTokenExp = exp
-	}
-
 	ti, verr := s.GetAuthorizeToken(req)
+
 	if verr != nil {
 		err = s.redirectError(w, req, verr)
 		return
@@ -311,7 +286,7 @@ func (s *Server) HandleAuthorizeRequest(w http.ResponseWriter, r *http.Request) 
 	return
 }
 
-// ValidationTokenRequest the json request validation
+// ValidationTokenRequest the token request validation
 func (s *Server) ValidationTokenRequest(r *http.Request) (gt oauth2.GrantType, tgr *oauth2.TokenGenerateRequest, client oauth2.Client, err error) {
 	if v := r.Method; !(v == "POST" ||
 		(s.Config.AllowGetAccessRequest && v == "GET")) {
@@ -382,7 +357,7 @@ func (s *Server) ValidationTokenRequest(r *http.Request) (gt oauth2.GrantType, t
 		tgr.UserID = u.GetUsername()
 	case oauth2.ClientCredentials:
 		tgr.Scope = r.FormValue("scope")
-	case oauth2.Refreshing:
+	case oauth2.RefreshToken:
 		tgr.Refresh = r.FormValue("refresh_token")
 		tgr.Scope = r.FormValue("scope")
 
@@ -411,7 +386,7 @@ func (s *Server) CheckGrantType(gt oauth2.GrantType) bool {
 	return false
 }
 
-// GetAccessToken access json
+// GetAccessToken access token
 func (s *Server) GetAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGenerateRequest, cli oauth2.Client) (ti oauth2.Token, err error) {
 	if allowed := s.CheckGrantType(gt); !allowed {
 		err = oauth2.ErrUnsupportedGrantType
@@ -435,31 +410,18 @@ func (s *Server) GetAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGenerateRe
 		ti = ati
 	case oauth2.PasswordCredentials, oauth2.ClientCredentials:
 		ti, err = s.Manager.GenerateAccessToken(gt, tgr, cli)
-	case oauth2.Refreshing:
-		// check scope
-		if scope, scopeFn := tgr.Scope, s.RefreshingScopeHandler; scope != "" && scopeFn != nil {
-
-			rti, verr := s.Manager.LoadRefreshToken(tgr.Refresh)
-			if verr != nil {
-				if verr == oauth2.ErrInvalidRefreshToken || verr == oauth2.ErrExpiredRefreshToken {
-					err = oauth2.ErrInvalidGrant
-					return
-				}
-				err = verr
+	case oauth2.RefreshToken:
+		rti, verr := s.Manager.LoadRefreshToken(tgr.Refresh)
+		if verr != nil {
+			if verr == oauth2.ErrInvalidRefreshToken || verr == oauth2.ErrExpiredRefreshToken {
+				err = oauth2.ErrInvalidGrant
 				return
 			}
-
-			allowed, verr := scopeFn(scope, rti.GetScope())
-			if verr != nil {
-				err = verr
-				return
-			} else if !allowed {
-				err = oauth2.ErrInvalidScope
-				return
-			}
+			err = verr
+			return
 		}
 
-		rti, verr := s.Manager.RefreshAccessToken(tgr)
+		rti, verr = s.Manager.RefreshAccessToken(tgr)
 		if verr != nil {
 			if verr == oauth2.ErrInvalidRefreshToken || verr == oauth2.ErrExpiredRefreshToken {
 				err = oauth2.ErrInvalidGrant
@@ -474,7 +436,7 @@ func (s *Server) GetAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGenerateRe
 	return
 }
 
-// GetTokenData json data
+// GetTokenData token data
 func (s *Server) GetTokenData(ti oauth2.Token) (data map[string]interface{}) {
 	data = map[string]interface{}{
 		"access_token": ti.GetAccess(),
@@ -502,7 +464,7 @@ func (s *Server) GetTokenData(ti oauth2.Token) (data map[string]interface{}) {
 	return
 }
 
-// HandleTokenRequest json request handling
+// HandleTokenRequest token request handling
 func (s *Server) HandleTokenRequest(w http.ResponseWriter, r *http.Request) (err error) {
 	gt, tgr, client, verr := s.ValidationTokenRequest(r)
 	if verr != nil {
@@ -520,7 +482,7 @@ func (s *Server) HandleTokenRequest(w http.ResponseWriter, r *http.Request) (err
 	return
 }
 
-// HandleCheckTokenRequest check json request handling
+// HandleCheckTokenRequest check token request handling
 func (s *Server) HandleCheckTokenRequest(w http.ResponseWriter, r *http.Request) (err error) {
 	ac := r.FormValue("token")
 	t, err := s.Manager.LoadAccessToken(ac)
@@ -532,8 +494,11 @@ func (s *Server) HandleCheckTokenRequest(w http.ResponseWriter, r *http.Request)
 		"client_id":  t.GetClientID(),
 		"expires_in": int64(t.GetAccessExpiresIn() / time.Second),
 	}
-	if scope := t.GetScope(); scope != "" {
+	if scope := t.GetScope(); len(scope) > 0 {
 		data["scope"] = scope
+	}
+	if username := t.GetUsername(); len(username) > 0 {
+		data["username"] = username
 	}
 	err = s.json(w, data, nil)
 	return
@@ -613,7 +578,7 @@ func (s *Server) GetErrorData(err error) (data map[string]interface{}, statusCod
 	return
 }
 
-// BearerAuth parse bearer json
+// BearerAuth parse bearer token
 func (s *Server) BearerAuth(r *http.Request) (accessToken string, ok bool) {
 	auth := r.Header.Get("Authorization")
 	prefix := "Bearer "

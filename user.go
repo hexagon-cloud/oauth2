@@ -1,23 +1,20 @@
 package oauth2
 
+// User user model interface
 type User interface {
-	GetID() string
+	GetID() uint64
 	GetUsername() string
 	GetPassword() string
 }
 
-// NewUser create to DefaultUser model instance
-func NewUser() User {
-	return &DefaultUser{}
-}
-
+// DefaultUser
 type DefaultUser struct {
-	ID       string `json:"id"`
+	ID       uint64 `json:"id"`
 	Username string `json:"username"`
 	Password string `json:"-"`
 }
 
-func (u *DefaultUser) GetID() string {
+func (u *DefaultUser) GetID() uint64 {
 	return u.ID
 }
 
@@ -27,9 +24,4 @@ func (u *DefaultUser) GetUsername() string {
 
 func (u *DefaultUser) GetPassword() string {
 	return u.Password
-}
-
-// New create to DefaultUser model instance
-func (u *DefaultUser) New() User {
-	return NewUser()
 }

@@ -22,12 +22,24 @@ var (
 	clientID     = "app"
 	clientSecret = "app"
 	scopes       = []string{"server", "all"}
-	grantType    = []oauth2.GrantType{oauth2.ClientCredentials, oauth2.PasswordCredentials, oauth2.AuthorizationCode}
+	grantType    = []oauth2.GrantType{oauth2.ClientCredentials,
+		oauth2.PasswordCredentials, oauth2.AuthorizationCode, oauth2.RefreshToken, oauth2.Implicit}
 )
 
 func init() {
 	manager = mgr.NewDefaultManager()
 	manager.MustTokenStorage(buntdbStore.NewMemoryTokenStore())
+	// password encoder
+	pwdEncoder := hmac.NewPasswordEncoder("key")
+	manager.MapPasswordEncoder(pwdEncoder)
+
+	// user store
+	userStore := memoryStore.NewUserStore()
+	userStore.Set("user1", &oauth2.DefaultUser{
+		Username: "user1",
+		Password: pwdEncoder.Encode("pwd1"),
+	})
+	manager.MapUserStorage(userStore)
 }
 
 func clientStore(redirectUri string) oauth2.ClientStore {
@@ -54,12 +66,12 @@ func testServer(t *testing.T, w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			t.Error(err)
 		}
-	case "check_token":
+	case "/check_token":
 		err := srv.HandleCheckTokenRequest(w, r)
 		if err != nil {
 			t.Error(err)
 		}
-	case "user_info":
+	case "/user_info":
 		err := srv.HandleTokenUserRequest(w, r)
 		if err != nil {
 			t.Error(err)
@@ -96,7 +108,9 @@ func TestAuthorizeCode(t *testing.T) {
 
 			t.Logf("%#v\n", resObj.Raw())
 
-			validationAccessToken(t, resObj.Value("access_token").String().Raw())
+			accessToken := resObj.Value("access_token").String().Raw()
+			checkAccessToken(e, t, accessToken)
+			checkUserToken(e, t, accessToken)
 		}
 	}))
 	defer csrv.Close()
@@ -104,7 +118,7 @@ func TestAuthorizeCode(t *testing.T) {
 	manager.MapClientStorage(clientStore(csrv.URL))
 	srv = NewDefaultServer(manager)
 	srv.SetUserAuthorizationHandler(func(w http.ResponseWriter, r *http.Request) (userID string, err error) {
-		userID = "000000"
+		userID = "user1"
 		return
 	})
 
@@ -127,25 +141,6 @@ func TestImplicit(t *testing.T) {
 	csrv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/oauth2":
-			r.ParseForm()
-			code, _ := r.Form.Get("code"), r.Form.Get("state")
-			//if state != "123" {
-			//	t.Error("unrecognized state:", state)
-			//	return
-			//}
-			resObj := e.POST("/token").
-				WithFormField("redirect_uri", csrv.URL+"/oauth2").
-				WithFormField("code", code).
-				WithFormField("grant_type", "authorization_code").
-				WithFormField("client_id", clientID).
-				WithBasicAuth(clientID, clientSecret).
-				Expect().
-				Status(http.StatusOK).
-				JSON().Object()
-
-			t.Logf("%#v\n", resObj.Raw())
-
-			validationAccessToken(t, resObj.Value("access_token").String().Raw())
 		}
 	}))
 	defer csrv.Close()
@@ -153,12 +148,12 @@ func TestImplicit(t *testing.T) {
 	manager.MapClientStorage(clientStore(csrv.URL))
 	srv = NewDefaultServer(manager)
 	srv.SetUserAuthorizationHandler(func(w http.ResponseWriter, r *http.Request) (userID string, err error) {
-		userID = "000000"
+		userID = "user1"
 		return
 	})
 
 	e.GET("/authorize").
-		WithQuery("response_type", "json").
+		WithQuery("response_type", "token").
 		WithQuery("client_id", clientID).
 		WithQuery("scope", "all").
 		WithQuery("state", "123").
@@ -174,17 +169,7 @@ func TestPasswordCredentials(t *testing.T) {
 	e := httpexpect.New(t, tsrv.URL)
 
 	manager.MapClientStorage(clientStore(""))
-	// password encoder
-	pwdEncoder := hmac.NewPasswordEncoder("key")
-	manager.MapPasswordEncoder(pwdEncoder)
 
-	// user store
-	userStore := memoryStore.NewUserStore()
-	userStore.Set("user1", &oauth2.DefaultUser{
-		Username: "user1",
-		Password: pwdEncoder.Encode("pwd1"),
-	})
-	manager.MapUserStorage(userStore)
 	srv = NewDefaultServer(manager)
 
 	resObj := e.POST("/token").
@@ -199,13 +184,11 @@ func TestPasswordCredentials(t *testing.T) {
 
 	t.Logf("%#v\n", resObj.Raw())
 
-	validationAccessToken(t, resObj.Value("access_token").String().Raw())
-	usrObj := e.GET("/user_info").
-		WithHeader("Authorization",
-		"Bearer "+resObj.Value("access_token").String().Raw()).
-		Expect().Status(http.StatusOK).JSON().Object()
+	accessToken := resObj.Value("access_token").String().Raw()
+	validationAccessToken(t, accessToken)
 
-	t.Logf("%#v\n", usrObj.Raw())
+	checkAccessToken(e, t, accessToken)
+	checkUserToken(e, t, accessToken)
 }
 
 func TestClientCredentials(t *testing.T) {
@@ -235,9 +218,6 @@ func TestClientCredentials(t *testing.T) {
 		fieldsValue = map[string]interface{}{
 			"extension": "param",
 		}
-		return
-	})
-	srv.SetAuthorizeScopeHandler(func(w http.ResponseWriter, r *http.Request) (scope string, err error) {
 		return
 	})
 
@@ -271,7 +251,7 @@ func TestRefreshing(t *testing.T) {
 				t.Error("unrecognized state:", state)
 				return
 			}
-			jresObj := e.POST("/json").
+			jresObj := e.POST("/token").
 				WithFormField("redirect_uri", csrv.URL+"/oauth2").
 				WithFormField("code", code).
 				WithFormField("grant_type", "authorization_code").
@@ -285,9 +265,9 @@ func TestRefreshing(t *testing.T) {
 
 			validationAccessToken(t, jresObj.Value("access_token").String().Raw())
 
-			resObj := e.POST("/json").
+			resObj := e.POST("/token").
 				WithFormField("grant_type", "refresh_token").
-				WithFormField("scope", "one").
+			//WithFormField("scope", "all").
 				WithFormField("refresh_token", jresObj.Value("refresh_token").String().Raw()).
 				WithBasicAuth(clientID, clientSecret).
 				Expect().
@@ -317,7 +297,26 @@ func TestRefreshing(t *testing.T) {
 		Expect().Status(http.StatusOK)
 }
 
-// validation access json
+func checkAccessToken(e *httpexpect.Expect, t *testing.T, accessToken string) {
+	resObj := e.POST("/check_token").
+		WithFormField("token", accessToken).
+		WithBasicAuth(clientID, clientSecret).
+		Expect().
+		Status(http.StatusOK).Body()
+	t.Logf("%#v\n", resObj.Raw())
+}
+
+func checkUserToken(e *httpexpect.Expect, t *testing.T, accessToken string) {
+	resObj := e.POST("/user_info").
+		WithHeader("Authorization",
+		"Bearer "+accessToken).
+		Expect().
+		Status(http.StatusOK).
+		JSON().Object()
+	t.Logf("%#v\n", resObj.Raw())
+}
+
+// validation access token
 func validationAccessToken(t *testing.T, accessToken string) {
 	req := httptest.NewRequest("GET", "http://example.com", nil)
 
@@ -329,6 +328,6 @@ func validationAccessToken(t *testing.T, accessToken string) {
 		return
 	}
 	if ti.GetClientID() != clientID {
-		t.Error("invalid access json")
+		t.Error("invalid access token")
 	}
 }

@@ -32,7 +32,7 @@ func main() {
 		ID:              "app",
 		Secret:          "app",
 		Scopes:          []string{"app"},
-		GrantTypes:      []oauth2.GrantType{oauth2.PasswordCredentials},
+		GrantTypes:      []oauth2.GrantType{oauth2.PasswordCredentials, oauth2.Implicit},
 		AccessTokenExp:  time.Duration(8) * time.Hour,
 		RefreshTokenExp: time.Duration(8) * time.Hour,
 	})
@@ -45,7 +45,7 @@ func main() {
 	// user store
 	userStore := memoryStore.NewUserStore()
 	userStore.Set("user1", &oauth2.DefaultUser{
-		ID:       "1",
+		ID:       1,
 		Username: "user1",
 		Password: pwdEncoder.Encode("pwd1"),
 	})
@@ -53,11 +53,14 @@ func main() {
 
 	uaaServer := server.NewServer(server.NewConfig(), mgr)
 
+	uaaServer.SetUserAuthorizationHandler(func(w http.ResponseWriter, r *http.Request) (userID string, err error) {
+		userID = "user1"
+		return
+	})
 	uaaServer.SetInternalErrorHandler(func(err error) (re *oauth2.ErrorResponse) {
 		log.Println("Internal Error:", err.Error())
 		return
 	})
-
 	uaaServer.SetResponseErrorHandler(func(re *oauth2.ErrorResponse) {
 		log.Println("ErrorResponse Error:", re.Error.Error())
 	})

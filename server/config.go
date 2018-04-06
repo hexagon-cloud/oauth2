@@ -8,8 +8,8 @@ import (
 
 // Config configuration parameters
 type Config struct {
-	TokenType             string                // json type
-	AllowGetAccessRequest bool                  // to allow GET requests for the json
+	TokenType             string                // token type
+	AllowGetAccessRequest bool                  // to allow GET requests for the token
 	AllowedResponseTypes  []oauth2.ResponseType // allow the authorization type
 	AllowedGrantTypes     []oauth2.GrantType    // allow the grant type
 }
@@ -23,7 +23,7 @@ func NewConfig() *Config {
 			oauth2.AuthorizationCode,
 			oauth2.PasswordCredentials,
 			oauth2.ClientCredentials,
-			oauth2.Refreshing,
+			oauth2.RefreshToken,
 		},
 	}
 }
