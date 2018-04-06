@@ -1,7 +1,7 @@
 package oauth2
 
 type User interface {
-	GetOpenid() string
+	GetID() string
 	GetUsername() string
 	GetPassword() string
 }
@@ -12,13 +12,13 @@ func NewUser() User {
 }
 
 type DefaultUser struct {
-	Openid   string `json:"openid"`
+	ID       string `json:"id"`
 	Username string `json:"username"`
 	Password string `json:"-"`
 }
 
-func (u *DefaultUser) GetOpenid() string {
-	return u.Openid
+func (u *DefaultUser) GetID() string {
+	return u.ID
 }
 
 func (u *DefaultUser) GetUsername() string {
